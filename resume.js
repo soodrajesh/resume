@@ -156,8 +156,8 @@ const doc = new Document({
         ],
         children: [
           new TextRun({ text: '✉  soodrajesh87@gmail.com', size: 18, color: COLORS.subtext, font: 'Arial' }),
-          new TextRun({ text: '\t🔗  linkedin.com/in/rajeshsood', size: 18, color: COLORS.accent, font: 'Arial' }),
-          new TextRun({ text: '\t⌥  github.com/rajeshsood', size: 18, color: COLORS.accent, font: 'Arial' }),
+          new TextRun({ text: '\t🔗  linkedin.com/in/irajeshsood', size: 18, color: COLORS.accent, font: 'Arial' }),
+          new TextRun({ text: '\t⌥  github.com/soodrajesh', size: 18, color: COLORS.accent, font: 'Arial' }),
           new TextRun({ text: '\t📍  Dublin, Ireland', size: 18, color: COLORS.subtext, font: 'Arial' }),
         ],
       }),
@@ -166,11 +166,11 @@ const doc = new Document({
       ...sectionHeading('Professional Summary'),
 
       para(
-        'With over 15 years of enterprise cloud experience, I architect the platforms that engineering teams rely on to ship fast, stay resilient, and scale without surprises.',
+        'With over 15 years of enterprise cloud experience, I build the platforms engineering teams rely on to ship fast without paying for it later in outages or security debt.',
         { before: 80, after: 60 }
       ),
       para(
-        'At Workday, I lead DevOps and AI/ML platform engineering across multi-account AWS: designing SageMaker orchestration systems, building serverless RAG pipelines, and deploying production GenAI integrations via AWS Bedrock. Alongside that, I set reliability standards across critical EKS workloads, own incident response frameworks, and drive FinOps governance that has compounded to $400K+ in cloud cost savings.',
+        'At Workday, I lead DevOps and AI/ML platform engineering initiatives across multi-account AWS: designing SageMaker orchestration systems, building serverless RAG pipelines, and deploying production GenAI integrations via AWS Bedrock. Alongside that, I drive reliability improvements for critical EKS workloads, lead incident response for the systems I own, and drive FinOps practices that have contributed to $400K+ in cumulative cloud cost savings across my career.',
         { before: 40, after: 60 }
       ),
       para(
@@ -183,10 +183,10 @@ const doc = new Document({
         width: { size: 9360, type: WidthType.DXA },
         columnWidths: [2340, 2340, 2340, 2340],
         rows: [new TableRow({ children: [
-          metricCell('$400K+',  'Cloud Cost Savings'),
+          metricCell('$400K+',  'Cumulative Career Savings'),
           metricCell('99.99%',  'Uptime SLA Delivered'),
           metricCell('35%',     'Faster Deploy Cycles'),
-          metricCell('10+',     'Engineering Squads Led'),
+          metricCell('10+',     'Squads Using My Platform Work'),
         ]})],
       }),
 
@@ -228,15 +228,15 @@ const doc = new Document({
       // ── WORKDAY
       jobHeader('Senior DevOps Engineer', 'Workday', 'Dublin, Ireland', 'Oct 2023 – Present'),
       para(
-        'Leading DevOps and AI/ML platform engineering across 10+ engineering squads in a globally distributed, high-scale SaaS environment.',
+        'Leading DevOps and AI/ML platform engineering initiatives adopted across 10+ engineering squads in a globally distributed, high-scale SaaS environment.',
         { before: 20, after: 70, italics: true, color: COLORS.subtext, size: 18 }
       ),
       bullet('AI/ML Platform Architecture: Designed and deployed scalable SageMaker infrastructure enabling data science teams to version, train, and serve models at enterprise scale — reducing model deployment lead time by 40%.'),
       bullet('Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) for internal enterprise applications, spanning prompt engineering, vector search, and production observability.'),
-      bullet('SRE & Reliability: Owned SLO/SLI framework and incident response for critical EKS microservices, maintaining 99.99% uptime through chaos-informed capacity planning and structured on-call rotation.'),
-      bullet('Platform Modernisation: Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time across all squads.'),
+      bullet('SRE & Reliability: Drove SLO/SLI framework adoption and led incident response improvements for critical EKS microservices, contributing to sustained 99.99% uptime through chaos-informed capacity planning and structured on-call rotation.'),
+      bullet('Platform Modernisation: Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time for adopting squads.'),
       bullet('Security Automation: Built AI-powered vulnerability remediation pipelines using Claude/Bedrock to auto-analyse Wiz findings and generate validated Terraform fixes — cutting mean remediation time by 60%.'),
-      bullet('FinOps Governance: Implemented cloud cost standards across multi-account AWS, driving $400K+ in cumulative savings through rightsizing, RI strategy, and anomaly detection automation.'),
+      bullet('FinOps Governance: Led cloud cost governance initiatives across multi-account AWS, including rightsizing, Reserved Instance strategy, and anomaly detection automation.'),
       bullet('AI-Augmented Velocity: Drove 25% acceleration in IaC delivery through team-wide adoption of GitHub Copilot and Cursor tooling.'),
 
       // ── PROTEGO
