@@ -155,7 +155,7 @@ const doc = new Document({
           { type: TabStopType.LEFT, position: 8300 },
         ],
         children: [
-          new TextRun({ text: '✉  soodrajesh87@gmail.com', size: 18, color: COLORS.subtext, font: 'Arial' }),
+          new TextRun({ text: '✉  [REDACTED-EMAIL]', size: 18, color: COLORS.subtext, font: 'Arial' }),
           new TextRun({ text: '\t🔗  linkedin.com/in/irajeshsood', size: 18, color: COLORS.accent, font: 'Arial' }),
           new TextRun({ text: '\t⌥  github.com/soodrajesh', size: 18, color: COLORS.accent, font: 'Arial' }),
           new TextRun({ text: '\t📍  Dublin, Ireland', size: 18, color: COLORS.subtext, font: 'Arial' }),
