@@ -300,6 +300,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then(buf => {
-  fs.writeFileSync('/mnt/user-data/outputs/Rajesh_Sood_Resume_2025.docx', buf);
+  fs.writeFileSync('Rajesh_Sood_Resume_2025.docx', buf);
   console.log('Done');
 });
