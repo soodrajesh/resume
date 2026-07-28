@@ -1,4 +1,9 @@
 const puppeteer = require('puppeteer');
+const {
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+  AlignmentType, LevelFormat, BorderStyle, WidthType, ShadingType,
+  VerticalAlign, TabStopType,
+} = require('docx');
 const fs = require('fs');
 
 const COLORS = {
@@ -8,6 +13,11 @@ const COLORS = {
   text:     '#1A1A1A',
   subtext:  '#555555',
 };
+
+// docx doesn't accept a leading '#' on hex colors
+const DOCX_COLORS = Object.fromEntries(
+  Object.entries(COLORS).map(([k, v]) => [k, v.replace('#', '')])
+);
 
 const htmlTemplate = `
 <!DOCTYPE html>
@@ -190,6 +200,267 @@ const htmlTemplate = `
 </html>
 `;
 
+// ── docx helpers ─────────────────────────────────────────────────────────────
+const noBorder  = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+
+function docxRule(color = DOCX_COLORS.accent, size = 10) {
+  return new Paragraph({
+    spacing: { before: 0, after: 80 },
+    border: { bottom: { style: BorderStyle.SINGLE, size, color, space: 1 } },
+    children: [],
+  });
+}
+
+function docxSectionHeading(text) {
+  return [
+    new Paragraph({
+      spacing: { before: 220, after: 0 },
+      children: [new TextRun({ text: text.toUpperCase(), bold: true, size: 24, color: DOCX_COLORS.primary, font: 'Arial' })],
+    }),
+    docxRule(),
+  ];
+}
+
+function docxBullet(text) {
+  const colonIdx = text.indexOf(':');
+  const children = (colonIdx > -1 && colonIdx < 55)
+    ? [
+        new TextRun({ text: text.substring(0, colonIdx + 1), bold: true, size: 18, color: DOCX_COLORS.text, font: 'Arial' }),
+        new TextRun({ text: text.substring(colonIdx + 1), size: 18, color: DOCX_COLORS.text, font: 'Arial' }),
+      ]
+    : [new TextRun({ text, size: 18, color: DOCX_COLORS.text, font: 'Arial' })];
+
+  return new Paragraph({
+    numbering: { reference: 'bullets', level: 0 },
+    spacing: { before: 40, after: 40, line: 280 },
+    children,
+  });
+}
+
+function docxJobHeader(title, company, location, dates) {
+  return new Paragraph({
+    spacing: { before: 200, after: 50 },
+    tabStops: [{ type: TabStopType.RIGHT, position: 9360 }],
+    children: [
+      new TextRun({ text: title, bold: true, size: 20, color: DOCX_COLORS.primary, font: 'Arial' }),
+      new TextRun({ text: '  ·  ', size: 18, color: DOCX_COLORS.subtext, font: 'Arial' }),
+      new TextRun({ text: company, bold: true, size: 19, color: DOCX_COLORS.accent, font: 'Arial' }),
+      new TextRun({ text: '  ·  ' + location, size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
+      new TextRun({ text: '\t', size: 17, font: 'Arial' }),
+      new TextRun({ text: dates, italics: true, size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
+    ],
+  });
+}
+
+function docxSkillRow(label, value) {
+  return new TableRow({
+    children: [
+      new TableCell({
+        borders: noBorders,
+        width: { size: 2100, type: WidthType.DXA },
+        margins: { top: 55, bottom: 55, left: 0, right: 100 },
+        children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 18, color: DOCX_COLORS.primary, font: 'Arial' })] })],
+      }),
+      new TableCell({
+        borders: noBorders,
+        width: { size: 7260, type: WidthType.DXA },
+        margins: { top: 55, bottom: 55, left: 0, right: 0 },
+        children: [new Paragraph({ children: [new TextRun({ text: value, size: 18, color: DOCX_COLORS.text, font: 'Arial' })] })],
+      }),
+    ],
+  });
+}
+
+function docxMetricCell(metric, label) {
+  return new TableCell({
+    borders: noBorders,
+    shading: { fill: DOCX_COLORS.light, type: ShadingType.CLEAR },
+    width: { size: 3120, type: WidthType.DXA },
+    margins: { top: 120, bottom: 120, left: 140, right: 140 },
+    verticalAlign: VerticalAlign.CENTER,
+    children: [
+      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: metric, bold: true, size: 34, color: DOCX_COLORS.primary, font: 'Arial' })] }),
+      new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 20 }, children: [new TextRun({ text: label, size: 16, color: DOCX_COLORS.subtext, font: 'Arial' })] }),
+    ],
+  });
+}
+
+function docxPara(text, { before = 60, after = 60, size = 18, color, bold = false, italics = false } = {}) {
+  return new Paragraph({
+    spacing: { before, after, line: 280 },
+    children: [new TextRun({ text, size, color: color || DOCX_COLORS.text, font: 'Arial', bold, italics })],
+  });
+}
+
+function docxEducationRow(degree, school, year) {
+  return new Paragraph({
+    spacing: { before: 30, after: 30 },
+    tabStops: [{ type: TabStopType.RIGHT, position: 9360 }],
+    children: [
+      new TextRun({ text: degree, bold: true, size: 18, color: DOCX_COLORS.primary, font: 'Arial' }),
+      new TextRun({ text: '  ·  ' + school, size: 18, color: DOCX_COLORS.text, font: 'Arial' }),
+      new TextRun({ text: '\t', size: 18, font: 'Arial' }),
+      new TextRun({ text: year, italics: true, size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
+    ],
+  });
+}
+
+async function generateDocx() {
+  const doc = new Document({
+    numbering: {
+      config: [{
+        reference: 'bullets',
+        levels: [{ level: 0, format: LevelFormat.BULLET, text: '▸', alignment: AlignmentType.LEFT,
+          style: { paragraph: { indent: { left: 480, hanging: 280 } } } }],
+      }],
+    },
+    styles: {
+      default: { document: { run: { font: 'Arial', size: 18, color: DOCX_COLORS.text } } },
+    },
+    sections: [{
+      properties: {
+        page: {
+          size: { width: 12240, height: 15840 },
+          margin: { top: 720, right: 936, bottom: 720, left: 936 },
+        },
+      },
+      children: [
+        new Paragraph({
+          spacing: { before: 0, after: 0 },
+          children: [
+            new TextRun({ text: 'RAJESH SOOD', bold: true, size: 52, color: DOCX_COLORS.primary, font: 'Arial' }),
+            new TextRun({ text: ', MBA', size: 26, color: DOCX_COLORS.accent, font: 'Arial' }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { before: 50, after: 70 },
+          children: [new TextRun({
+            text: 'Senior Cloud & DevOps Engineer · AI/ML Platform Engineering · AWS · Kubernetes · Terraform · SRE',
+            size: 21, color: DOCX_COLORS.subtext, font: 'Arial',
+          })],
+        }),
+        docxRule(DOCX_COLORS.primary, 14),
+        new Paragraph({
+          spacing: { before: 70, after: 100 },
+          tabStops: [
+            { type: TabStopType.LEFT, position: 3100 },
+            { type: TabStopType.LEFT, position: 6000 },
+            { type: TabStopType.LEFT, position: 8300 },
+          ],
+          children: [
+            new TextRun({ text: '✉  soodrajesh87@gmail.com', size: 19, color: DOCX_COLORS.subtext, font: 'Arial' }),
+            new TextRun({ text: '\t🔗  linkedin.com/in/rajeshsood', size: 19, color: DOCX_COLORS.accent, font: 'Arial' }),
+            new TextRun({ text: '\t⌥  github.com/soodrajesh', size: 19, color: DOCX_COLORS.accent, font: 'Arial' }),
+            new TextRun({ text: '\t📍  Dublin, Ireland', size: 19, color: DOCX_COLORS.subtext, font: 'Arial' }),
+          ],
+        }),
+
+        ...docxSectionHeading('Professional Summary'),
+        docxPara(
+          'With over 15 years of enterprise cloud experience, I architect the platforms that engineering teams rely on to ship fast, stay resilient, and scale without surprises.',
+          { before: 80, after: 60 }
+        ),
+        docxPara(
+          'I lead DevOps and AI/ML platform engineering across multi-account AWS — building the infrastructure that powers internal AI products, documentation platforms, and GenAI integrations at enterprise scale. Alongside that, I set reliability standards across critical AWS workloads, own incident response frameworks, and drive FinOps governance that has compounded to $200K+ in cloud cost savings.',
+          { before: 40, after: 60 }
+        ),
+        docxPara(
+          'Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.',
+          { before: 40, after: 100 }
+        ),
+
+        new Table({
+          width: { size: 9360, type: WidthType.DXA },
+          columnWidths: [3120, 3120, 3120],
+          rows: [new TableRow({ children: [
+            docxMetricCell('$200K+', 'Cloud Cost Savings'),
+            docxMetricCell('99.99%', 'Uptime SLA Delivered'),
+            docxMetricCell('35%',    'Faster Deploy Cycles'),
+          ]})],
+        }),
+
+        ...docxSectionHeading('Core Technical Competencies'),
+        new Table({
+          width: { size: 9360, type: WidthType.DXA },
+          columnWidths: [2100, 7260],
+          rows: [
+            docxSkillRow('AI/ML Platform:', 'AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops'),
+            docxSkillRow('Cloud Architecture:', 'AWS (EKS, Networking, Serverless) · Azure · GCP · OCI — multi-region, multi-account'),
+            docxSkillRow('Platform Eng & IaC:', 'Terraform, CloudFormation, Helm, Ansible — Internal developer platforms · Self-service infra'),
+            docxSkillRow('SRE & Reliability:', 'SLO/SLI/Error-budget design · Incident command · Splunk, Datadog, Prometheus/Grafana'),
+            docxSkillRow('CI/CD & DevOps:', 'Jenkins, GitHub Actions · Shift-left testing · 35% cycle-time reduction achieved'),
+            docxSkillRow('Security/Compliance:', 'DevSecOps (Wiz, Snyk, SonarQube) · IAM zero-trust design · GDPR, SOC 2, HIPAA · Automated remediation pipelines'),
+            docxSkillRow('AI-Augmented Eng:', 'GitHub Copilot, Cursor, Claude/Bedrock — IaC generation, log analysis, vulnerability auto-remediation workflows'),
+          ],
+        }),
+
+        ...docxSectionHeading('Certifications'),
+        new Paragraph({
+          spacing: { before: 80, after: 40 },
+          children: [
+            new TextRun({ text: '★  AWS Certified Solutions Architect – Professional', bold: true, size: 18, color: DOCX_COLORS.primary, font: 'Arial' }),
+            new TextRun({ text: '  (Valid Dec 2026)  ·  credly.com/users/rajeshsood', size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
+          ],
+        }),
+        docxPara(
+          'Previously Certified: Microsoft Azure (Exam 533) · Google Cloud Professional Architect · Oracle OCI Architect Professional & Associate',
+          { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 80 }
+        ),
+
+        ...docxSectionHeading('Professional Experience'),
+
+        docxJobHeader('Senior DevOps Engineer', 'Workday', 'Dublin, Ireland', 'Oct 2023 – Present'),
+        docxPara(
+          "Leading DevOps and AI/ML platform engineering within Workday's enterprise AWS environment, enabling internal product and documentation teams.",
+          { before: 20, after: 70, italics: true, color: DOCX_COLORS.subtext, size: 17 }
+        ),
+        docxBullet("AI/ML Platform Architecture: Designed and deployed SageMaker infrastructure enabling internal AI/ML teams to build, version, and serve models against Workday's documentation data — reducing model deployment lead time by 40%."),
+        docxBullet('Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) powering internal AI chatbots and documentation search applications — spanning prompt engineering, vector search, and production observability.'),
+        docxBullet('SRE & Reliability: Owned SLO/SLI framework and incident response for critical EKS microservices, maintaining 99.99% uptime through capacity planning and structured on-call rotation.'),
+        docxBullet('Platform Modernisation: Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time across all squads.'),
+        docxBullet('Security Automation: Built AI-powered vulnerability remediation pipelines using Claude/Bedrock to auto-analyse PRs & Wiz findings and generate validated Terraform fixes — cutting mean remediation time by 60%.'),
+        docxBullet('FinOps Governance: Implemented cloud cost standards across multi-account AWS, driving $100K+ in cumulative savings through rightsizing, RI strategy, and anomaly detection automation.'),
+        docxBullet('AI-Augmented Velocity: Drove 25% acceleration in IaC delivery through team-wide adoption of GitHub Copilot and Cursor tooling.'),
+
+        docxJobHeader('Cloud Infrastructure Engineer (SRE)', 'Protego Technologies', 'Dublin, Ireland', 'Sep 2022 – Oct 2023'),
+        docxBullet('Observability Architecture: Built global observability stack (Splunk + Datadog + Prometheus) with SLO/SLI alerting, reducing MTTR by 45% across high-availability financial services workloads.'),
+        docxBullet('Security Posture: Integrated Snyk and OWASP ZAP into automated pipelines as shift-left controls, reducing production vulnerabilities by 40%.'),
+        docxBullet('Reliability Engineering: Owned EKS cluster operations for HA financial services — capacity planning, incident command, and runbook-driven on-call rotation.'),
+
+        docxJobHeader('Cloud SysOps Engineer (Lead)', 'Hilti Asia IT Services', 'Kuala Lumpur, Malaysia', 'Dec 2019 – Aug 2022'),
+        docxBullet('Cost Optimisation: Delivered $120K in annual savings through Reserved Instance strategy and resource lifecycle automation across multi-region AWS.'),
+        docxBullet('Global Standardisation: Authored CloudFormation templates enforcing security and compliance baselines across 10+ AWS regions and business units.'),
+        docxBullet('Compliance Leadership: Led IAM governance program ensuring controls met enterprise SOC 2 and internal audit standards.'),
+
+        docxJobHeader('Cloud Service Engineer', 'MAXIS Sdn Bhd', 'Kuala Lumpur, Malaysia', 'Jul 2018 – Dec 2019'),
+        docxBullet('Scale Migration: Architected and migrated 30+ enterprise applications to AWS with HA/DR configurations and zero-downtime cutovers.'),
+        docxBullet('RI Strategy: Spearheaded Reserved Instance purchasing program, reducing cloud expenditure by 15% ($80K annually).'),
+
+        docxJobHeader('IT Service Delivery Consultant III (L3)', 'DXC Technology (formerly HPE)', 'Cyberjaya, Malaysia', 'Feb 2017 – Jun 2018'),
+        docxBullet('Multi-Cloud Operations: Provided L3 architectural support across hybrid environments (AWS, Hyper-V, VMware), managing 300+ EC2 instances across 8 enterprise accounts.'),
+        docxBullet('Automation: Developed health-check and remediation scripts that significantly reduced application downtime and manual escalation.'),
+
+        new Paragraph({
+          spacing: { before: 180, after: 40 },
+          children: [new TextRun({ text: 'Earlier Career', bold: true, size: 19, color: DOCX_COLORS.primary, font: 'Arial' })],
+        }),
+        docxPara('Senior VMware Administrator (L3) · Softenger Malaysia (HPE client) · Oct 2016 – Jan 2017', { size: 17, color: DOCX_COLORS.subtext, before: 30, after: 20 }),
+        docxPara('Senior IT OS Analyst · Optum / UnitedHealth Group, Noida · Nov 2014 – Oct 2016 — IaaS automation with HP BSA Suite; vSphere and vRealize Automation for self-service provisioning.', { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 20 }),
+        docxPara('Associate Professional · CSC India (now DXC) · Oct 2012 – Nov 2014 — Windows/Linux environments and VMware vSphere administration.', { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 20 }),
+        docxPara('Dell International & HCL India · Jul 2010 – Oct 2012 — Enterprise technical support, Active Directory, and network device administration.', { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 80 }),
+
+        ...docxSectionHeading('Education'),
+        docxEducationRow('MBA in Information Technology', 'Sikkim Manipal University, India', '2015'),
+        docxEducationRow('B.E. in Computer Science', 'Visvesvaraya Technological University, Karnataka, India', '2010'),
+      ],
+    }],
+  });
+
+  const buf = await Packer.toBuffer(doc);
+  fs.writeFileSync('Rajesh_Sood_Resume_2026.docx', buf);
+}
+
 async function generatePDF() {
   const browser = await puppeteer.launch();
   try {
@@ -209,6 +480,7 @@ async function generatePDF() {
 async function main() {
   fs.writeFileSync('resume.html', htmlTemplate);
   await generatePDF();
+  await generateDocx();
   console.log('Done');
 }
 
