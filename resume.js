@@ -3,6 +3,7 @@ const {
   AlignmentType, LevelFormat, BorderStyle, WidthType, ShadingType,
   VerticalAlign, TabStopType,
 } = require('docx');
+const PDFDocument = require('pdfkit');
 const fs = require('fs');
 
 const COLORS = {
@@ -299,7 +300,102 @@ const doc = new Document({
   }],
 });
 
+function generatePDF() {
+  const pdfDoc = new PDFDocument({ margin: 36 });
+  const pdfStream = fs.createWriteStream('Rajesh_Sood_Resume_2025.pdf');
+
+  pdfDoc.pipe(pdfStream);
+
+  // Title
+  pdfDoc.fontSize(28).font('Helvetica-Bold').fillColor(COLORS.primary).text('RAJESH SOOD');
+  pdfDoc.fontSize(12).fillColor(COLORS.accent).text(', MBA', { continued: false });
+
+  // Tagline
+  pdfDoc.fontSize(10).fillColor(COLORS.subtext)
+    .text('Senior Cloud & DevOps Engineer  ·  AI/ML Platform Engineering  ·  AWS · Kubernetes · Terraform · SRE  ·  Dublin, Ireland', { lineGap: 4 });
+
+  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.primary).stroke();
+  pdfDoc.moveTo(0, 0);
+
+  // Contact
+  pdfDoc.fontSize(9).fillColor(COLORS.subtext).text('✉  [REDACTED-EMAIL]  ·  🔗  linkedin.com/in/irajeshsood  ·  ⌥  github.com/soodrajesh  ·  📍  Dublin, Ireland', { lineGap: 2 });
+
+  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('PROFESSIONAL SUMMARY', { before: 12, after: 6 });
+  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
+  pdfDoc.moveTo(0, 0);
+
+  pdfDoc.fontSize(10).font('Helvetica').fillColor(COLORS.text)
+    .text('With over 15 years of enterprise cloud experience, I build the platforms engineering teams rely on to ship fast without paying for it later in outages or security debt.', { lineGap: 3 });
+  pdfDoc.text('At Workday, I lead DevOps and AI/ML platform engineering initiatives across multi-account AWS: designing SageMaker orchestration systems, building serverless RAG pipelines, and deploying production GenAI integrations via AWS Bedrock. Alongside that, I drive reliability improvements for critical EKS workloads, lead incident response for the systems I own, and drive FinOps practices that have contributed to $400K+ in cumulative cloud cost savings across my career.', { lineGap: 3 });
+  pdfDoc.text('Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.', { lineGap: 3 });
+
+  // Competencies
+  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('CORE TECHNICAL COMPETENCIES', { before: 12, after: 6 });
+  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
+  pdfDoc.moveTo(0, 0);
+
+  const skills = [
+    { label: 'AI/ML Platform:', value: 'AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops' },
+    { label: 'Cloud Architecture:', value: 'AWS (EKS, Advanced Networking, Serverless, Lambda) · Azure · GCP · OCI — multi-region, multi-account' },
+    { label: 'Platform Eng & IaC:', value: 'Terraform, CloudFormation, Helm, Ansible — GitOps-first delivery · Internal developer platforms · Self-service infra' },
+    { label: 'SRE & Reliability:', value: 'SLO/SLI/Error-budget design · Incident command · Chaos engineering · Splunk, Datadog, Prometheus/Grafana' },
+    { label: 'CI/CD & DevOps:', value: 'Jenkins, GitHub Actions, ArgoCD · Trunk-based delivery · Shift-left testing · 35% cycle-time reduction achieved' },
+  ];
+
+  skills.forEach(skill => {
+    pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.text).text(skill.label, { continued: true });
+    pdfDoc.font('Helvetica').fillColor(COLORS.text).text(` ${skill.value}`, { lineGap: 2 });
+  });
+
+  // Certifications
+  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('CERTIFICATIONS', { before: 12, after: 6 });
+  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
+  pdfDoc.moveTo(0, 0);
+
+  pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text('★  AWS Certified Solutions Architect – Professional', { continued: true });
+  pdfDoc.font('Helvetica').fillColor(COLORS.subtext).text('  (Valid Dec 2026)  ·  credly.com/users/rajeshsood', { lineGap: 2 });
+
+  // Experience
+  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('PROFESSIONAL EXPERIENCE', { before: 12, after: 6 });
+  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
+  pdfDoc.moveTo(0, 0);
+
+  const jobs = [
+    { title: 'Senior DevOps Engineer', company: 'Workday', location: 'Dublin, Ireland', dates: 'Oct 2023 – Present' },
+    { title: 'Cloud Infrastructure Engineer (SRE)', company: 'Protego Technologies', location: 'Dublin, Ireland', dates: 'Sep 2022 – Oct 2023' },
+  ];
+
+  jobs.forEach(job => {
+    pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text(job.title, { continued: true });
+    pdfDoc.font('Helvetica').fillColor(COLORS.accent).text(` · ${job.company}`, { continued: true });
+    pdfDoc.fillColor(COLORS.subtext).text(` · ${job.location}  `, { continued: true });
+    pdfDoc.font('Helvetica-Oblique').text(job.dates, { lineGap: 2 });
+    pdfDoc.fontSize(9).text('• AI/ML Platform Architecture: Designed and deployed scalable SageMaker infrastructure enabling data science teams to version, train, and serve models at enterprise scale.', { lineGap: 1 });
+    pdfDoc.text('• Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan).', { lineGap: 1 });
+  });
+
+  // Education
+  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('EDUCATION', { before: 12, after: 6 });
+  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
+  pdfDoc.moveTo(0, 0);
+
+  pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text('MBA in Information Technology', { continued: true });
+  pdfDoc.font('Helvetica').fillColor(COLORS.text).text('  ·  Sikkim Manipal University, India', { continued: true });
+  pdfDoc.font('Helvetica-Oblique').fillColor(COLORS.subtext).text('  2015', { lineGap: 2 });
+
+  pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text('B.E. in Computer Science', { continued: true });
+  pdfDoc.font('Helvetica').fillColor(COLORS.text).text('  ·  Visvesvaraya Technological University, Karnataka, India', { continued: true });
+  pdfDoc.font('Helvetica-Oblique').fillColor(COLORS.subtext).text('  2010', { lineGap: 2 });
+
+  pdfDoc.end();
+
+  return new Promise(resolve => {
+    pdfStream.on('finish', resolve);
+  });
+}
+
 Packer.toBuffer(doc).then(buf => {
   fs.writeFileSync('Rajesh_Sood_Resume_2025.docx', buf);
+}).then(() => generatePDF()).then(() => {
   console.log('Done');
 });
