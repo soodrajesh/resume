@@ -1,6 +1,6 @@
 # Resume Generator
 
-A script that generates a formatted resume as both `.docx` and `.pdf` files.
+Generates a professional resume as HTML and PDF from a single JavaScript source.
 
 ## Quick Start
 
@@ -11,7 +11,11 @@ node resume.js
 
 ## Output Files
 
-- `Rajesh_Sood_Resume_2025.docx` — Formatted Word document (12.9K)
-- `Rajesh_Sood_Resume_2025.pdf` — PDF version (3.9K)
+- `resume.html` — Interactive HTML version (view in any browser)
+- `Rajesh_Sood_Resume_2025.pdf` — PDF export (ready to send/print)
 
-Anytime you want to tweak content — a new job, updated metrics, different wording — edit the relevant section in `resume.js` and re-run. No Word or PDF editor needed.
+## Editing
+
+Edit content directly in `resume.js`. All styling, layout, and typography are defined in the HTML template. Re-run `node resume.js` to regenerate both files.
+
+The script uses Puppeteer to render the HTML to a pixel-perfect PDF, ensuring consistency between the web and print versions.

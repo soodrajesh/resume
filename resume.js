@@ -1,401 +1,220 @@
-const {
-  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  AlignmentType, LevelFormat, BorderStyle, WidthType, ShadingType,
-  VerticalAlign, TabStopType,
-} = require('docx');
-const PDFDocument = require('pdfkit');
+const puppeteer = require('puppeteer');
 const fs = require('fs');
+const path = require('path');
 
 const COLORS = {
-  primary:  '1B3A6B',
-  accent:   '2E75B6',
-  light:    'D6E4F0',
-  text:     '1A1A1A',
-  subtext:  '555555',
+  primary:  '#1B3A6B',
+  accent:   '#2E75B6',
+  light:    '#D6E4F0',
+  text:     '#1A1A1A',
+  subtext:  '#555555',
 };
 
-const noBorder  = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
-const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+const htmlTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rajesh Sood Resume</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: ${COLORS.text}; }
+    .page { max-width: 8.5in; height: 11in; margin: 0 auto; padding: 0.6in 0.75in; background: white; }
+    .header { margin-bottom: 0.3in; border-bottom: 3px solid ${COLORS.primary}; padding-bottom: 0.2in; }
+    .name { font-size: 2.4em; font-weight: 900; color: ${COLORS.primary}; margin-bottom: 0.05in; }
+    .name .mba { font-size: 0.5em; color: ${COLORS.accent}; }
+    .tagline { font-size: 0.85em; color: ${COLORS.subtext}; margin-bottom: 0.1in; }
+    .contact { font-size: 0.8em; display: flex; gap: 1em; flex-wrap: wrap; color: ${COLORS.subtext}; }
+    .contact a { color: ${COLORS.accent}; text-decoration: none; }
+    .section-title { font-size: 1.15em; font-weight: 800; color: ${COLORS.primary}; margin-top: 0.25in; margin-bottom: 0.15in; border-bottom: 2px solid ${COLORS.accent}; padding-bottom: 0.08in; }
+    .summary { font-size: 0.92em; line-height: 1.6; margin-bottom: 0.2in; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.15in; margin-bottom: 0.25in; }
+    .metric { background: ${COLORS.light}; padding: 0.2in; text-align: center; border-radius: 4px; }
+    .metric-value { font-size: 1.6em; font-weight: 900; color: ${COLORS.primary}; }
+    .metric-label { font-size: 0.75em; color: ${COLORS.subtext}; margin-top: 0.05in; }
+    .skills-table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-bottom: 0.2in; }
+    .skills-table td { padding: 0.08in 0.1in; vertical-align: top; }
+    .skills-table td:first-child { font-weight: 700; color: ${COLORS.primary}; width: 15%; }
+    .job-header { display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.15in; margin-bottom: 0.05in; font-weight: 600; }
+    .job-title { font-size: 0.95em; color: ${COLORS.primary}; }
+    .job-company { color: ${COLORS.accent}; }
+    .job-meta { font-size: 0.85em; color: ${COLORS.subtext}; }
+    .job-intro { font-size: 0.85em; font-style: italic; color: ${COLORS.subtext}; margin-bottom: 0.08in; }
+    .bullets { margin-left: 0.2in; font-size: 0.9em; line-height: 1.5; margin-bottom: 0.1in; }
+    .bullet { margin-bottom: 0.08in; }
+    .bullet::before { content: '▸ '; color: ${COLORS.accent}; font-weight: bold; margin-right: 0.05in; }
+    .cert-item { font-size: 0.9em; margin-bottom: 0.1in; }
+    .cert-star { color: ${COLORS.primary}; font-weight: bold; }
+    .education { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 0.1in; }
+    .edu-left { }
+    .edu-right { text-align: right; color: ${COLORS.subtext}; font-style: italic; }
+    .earlier-title { font-weight: 600; margin-top: 0.1in; margin-bottom: 0.05in; font-size: 0.9em; }
+    .earlier-bullets { margin-left: 0.2in; font-size: 0.85em; line-height: 1.4; }
+    .earlier-item { margin-bottom: 0.05in; }
+    .earlier-item::before { content: '▪ '; color: ${COLORS.text}; margin-right: 0.05in; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="name">RAJESH SOOD<span class="mba">, MBA</span></div>
+      <div class="tagline">Senior Cloud & DevOps Engineer · AI/ML Platform Engineering · AWS · Kubernetes · Terraform · SRE</div>
+      <div class="contact">
+        <span>✉ soodrajesh87@gmail.com</span>
+        <span>🔗 <a href="https://linkedin.com/in/rajeshsood">linkedin.com/in/rajeshsood</a></span>
+        <span>⌥ <a href="https://github.com/soodrajesh">github.com/soodrajesh</a></span>
+        <span>📍 Dublin, Ireland</span>
+      </div>
+    </div>
 
-function rule(color = COLORS.accent, size = 10) {
-  return new Paragraph({
-    spacing: { before: 0, after: 80 },
-    border: { bottom: { style: BorderStyle.SINGLE, size, color, space: 1 } },
-    children: [],
-  });
+    <div class="section-title">PROFESSIONAL SUMMARY</div>
+    <div class="summary">
+      <p>With over 15 years of enterprise cloud experience, I architect the platforms that engineering teams rely on to ship fast, stay resilient, and scale without surprises.</p>
+      <p>I lead DevOps and AI/ML platform engineering across multi-account AWS — building the infrastructure that powers internal AI products, documentation platforms, and GenAI integrations at enterprise scale. Alongside that, I set reliability standards across critical AWS workloads, own incident response frameworks, and drive FinOps governance that has compounded to $200K+ in cloud cost savings.</p>
+      <p>Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-value">$200K+</div>
+        <div class="metric-label">Cloud Cost Savings</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">99.99%</div>
+        <div class="metric-label">Uptime SLA Delivered</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">35%</div>
+        <div class="metric-label">Faster Deploy Cycles</div>
+      </div>
+    </div>
+
+    <div class="section-title">CORE TECHNICAL COMPETENCIES</div>
+    <table class="skills-table">
+      <tr>
+        <td>AI/ML Platform:</td>
+        <td>AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops</td>
+      </tr>
+      <tr>
+        <td>Cloud Architecture:</td>
+        <td>AWS (EKS, Networking, Serverless) · Azure · GCP · OCI — multi-region, multi-account</td>
+      </tr>
+      <tr>
+        <td>Platform Eng & IaC:</td>
+        <td>Terraform, CloudFormation, Helm, Ansible — Internal developer platforms · Self-service infra</td>
+      </tr>
+      <tr>
+        <td>SRE & Reliability:</td>
+        <td>SLO/SLI/Error-budget design · Incident command · Splunk, Datadog, Prometheus/Grafana</td>
+      </tr>
+      <tr>
+        <td>CI/CD & DevOps:</td>
+        <td>Jenkins, GitHub Actions · Shift-left testing · 35% cycle-time reduction achieved</td>
+      </tr>
+      <tr>
+        <td>Security/Compliance:</td>
+        <td>DevSecOps (Wiz, Snyk, SonarQube) · IAM zero-trust design · GDPR, SOC 2, HIPAA · Automated remediation pipelines</td>
+      </tr>
+      <tr>
+        <td>AI-Augmented Eng:</td>
+        <td>GitHub Copilot, Cursor, Claude/Bedrock — IaC generation, log analysis, vulnerability auto-remediation workflows</td>
+      </tr>
+    </table>
+
+    <div class="section-title">CERTIFICATIONS</div>
+    <div class="cert-item"><span class="cert-star">★</span> AWS Certified Solutions Architect – Professional (Valid Dec 2026) · <a href="https://credly.com/users/rajeshsood" style="color: ${COLORS.accent}; text-decoration: none;">credly.com/users/rajeshsood</a></div>
+    <div class="cert-item">Previously Certified: Microsoft Azure (Exam 533) · Google Cloud Professional Architect · Oracle OCI Architect Professional & Associate</div>
+
+    <div class="section-title">PROFESSIONAL EXPERIENCE</div>
+
+    <div class="job-header">
+      <span><span class="job-title">Senior DevOps Engineer</span> · <span class="job-company">Workday</span> · <span class="job-meta">Dublin, Ireland</span></span>
+      <span class="job-meta">Oct 2023 – Present</span>
+    </div>
+    <div class="job-intro">Leading DevOps and AI/ML platform engineering within Workday's enterprise AWS environment, enabling internal product and documentation teams.</div>
+    <div class="bullets">
+      <div class="bullet"><strong>AI/ML Platform Architecture:</strong> Designed and deployed SageMaker infrastructure enabling internal AI/ML teams to build, version, and serve models against Workday's documentation data — reducing model deployment lead time by 40%.</div>
+      <div class="bullet"><strong>Generative AI Integration:</strong> Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) powering internal AI chatbots and documentation search applications — spanning prompt engineering, vector search, and production observability.</div>
+      <div class="bullet"><strong>SRE & Reliability:</strong> Owned SLO/SLI framework and incident response for critical EKS microservices, maintaining 99.99% uptime through capacity planning and structured on-call rotation.</div>
+      <div class="bullet"><strong>Platform Modernisation:</strong> Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time across all squads.</div>
+      <div class="bullet"><strong>Security Automation:</strong> Built AI-powered vulnerability remediation pipelines using Claude/Bedrock to auto-analyse PRs & Wiz findings and generate validated Terraform fixes — cutting mean remediation time by 60%.</div>
+      <div class="bullet"><strong>FinOps Governance:</strong> Implemented cloud cost standards across multi-account AWS, driving $100K+ in cumulative savings through rightsizing, RI strategy, and anomaly detection automation.</div>
+      <div class="bullet"><strong>AI-Augmented Velocity:</strong> Drove 25% acceleration in IaC delivery through team-wide adoption of GitHub Copilot and Cursor tooling.</div>
+    </div>
+
+    <div class="job-header">
+      <span><span class="job-title">Cloud Infrastructure Engineer (SRE)</span> · <span class="job-company">Protego Technologies</span> · <span class="job-meta">Dublin, Ireland</span></span>
+      <span class="job-meta">Sep 2022 – Oct 2023</span>
+    </div>
+    <div class="bullets">
+      <div class="bullet"><strong>Observability Architecture:</strong> Built global observability stack (Splunk + Datadog + Prometheus) with SLO/SLI alerting, reducing MTTR by 45% across high-availability financial services workloads.</div>
+      <div class="bullet"><strong>Security Posture:</strong> Integrated Snyk and OWASP ZAP into automated pipelines as shift-left controls, reducing production vulnerabilities by 40%.</div>
+      <div class="bullet"><strong>Reliability Engineering:</strong> Owned EKS cluster operations for HA financial services — capacity planning, incident command, and runbook-driven on-call rotation.</div>
+    </div>
+
+    <div class="job-header">
+      <span><span class="job-title">Cloud SysOps Engineer (Lead)</span> · <span class="job-company">Hilti Asia IT Services</span> · <span class="job-meta">Kuala Lumpur, Malaysia</span></span>
+      <span class="job-meta">Dec 2019 – Aug 2022</span>
+    </div>
+    <div class="bullets">
+      <div class="bullet"><strong>Cost Optimisation:</strong> Delivered $120K in annual savings through Reserved Instance strategy and resource lifecycle automation across multi-region AWS.</div>
+      <div class="bullet"><strong>Global Standardisation:</strong> Authored CloudFormation templates enforcing security and compliance baselines across 10+ AWS regions and business units.</div>
+      <div class="bullet"><strong>Compliance Leadership:</strong> Led IAM governance program ensuring controls met enterprise SOC 2 and internal audit standards.</div>
+    </div>
+
+    <div class="job-header">
+      <span><span class="job-title">Cloud Service Engineer</span> · <span class="job-company">MAXIS Sdn Bhd</span> · <span class="job-meta">Kuala Lumpur, Malaysia</span></span>
+      <span class="job-meta">Jul 2018 – Dec 2019</span>
+    </div>
+    <div class="bullets">
+      <div class="bullet"><strong>Scale Migration:</strong> Architected and migrated 30+ enterprise applications to AWS with HA/DR configurations and zero-downtime cutovers.</div>
+      <div class="bullet"><strong>RI Strategy:</strong> Spearheaded Reserved Instance purchasing program, reducing cloud expenditure by 15% ($80K annually).</div>
+    </div>
+
+    <div class="job-header">
+      <span><span class="job-title">IT Service Delivery Consultant III (L3)</span> · <span class="job-company">DXC Technology (formerly HPE)</span> · <span class="job-meta">Cyberjaya, Malaysia</span></span>
+      <span class="job-meta">Feb 2017 – Jun 2018</span>
+    </div>
+    <div class="bullets">
+      <div class="bullet"><strong>Multi-Cloud Operations:</strong> Provided L3 architectural support across hybrid environments (AWS, Hyper-V, VMware), managing 300+ EC2 instances across 8 enterprise accounts.</div>
+      <div class="bullet"><strong>Automation:</strong> Developed health-check and remediation scripts that significantly reduced application downtime and manual escalation.</div>
+    </div>
+
+    <div class="earlier-title">Earlier Career</div>
+    <div class="earlier-bullets">
+      <div class="earlier-item">Senior VMware Administrator (L3) · Softenger Malaysia (HPE client) · Oct 2016 – Jan 2017</div>
+      <div class="earlier-item">Senior IT OS Analyst · Optum / UnitedHealth Group, Noida · Nov 2014 – Oct 2016 — IaaS automation with HP BSA Suite; vSphere and vRealize Automation for self-service provisioning.</div>
+      <div class="earlier-item">Associate Professional · CSC India (now DXC) · Oct 2012 – Nov 2014 — Windows/Linux environments and VMware vSphere administration.</div>
+      <div class="earlier-item">Dell International & HCL India · Jul 2010 – Oct 2012 — Enterprise technical support, Active Directory, and network device administration.</div>
+    </div>
+
+    <div class="section-title">EDUCATION</div>
+    <div class="education">
+      <span class="edu-left"><strong>MBA in Information Technology</strong> · Sikkim Manipal University, India</span>
+      <span class="edu-right">2015</span>
+    </div>
+    <div class="education">
+      <span class="edu-left"><strong>B.E. in Computer Science</strong> · Visvesvaraya Technological University, Karnataka, India</span>
+      <span class="edu-right">2010</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+async function generatePDF() {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.setContent(htmlTemplate);
+  await page.pdf({ path: 'Rajesh_Sood_Resume_2025.pdf', format: 'letter' });
+  await browser.close();
 }
 
-function sectionHeading(text) {
-  return [
-    new Paragraph({
-      spacing: { before: 220, after: 0 },
-      children: [new TextRun({ text: text.toUpperCase(), bold: true, size: 22, color: COLORS.primary, font: 'Arial' })],
-    }),
-    rule(),
-  ];
-}
-
-function bullet(text) {
-  const colonIdx = text.indexOf(':');
-  const children = (colonIdx > -1 && colonIdx < 55)
-    ? [
-        new TextRun({ text: text.substring(0, colonIdx + 1), bold: true, size: 19, color: COLORS.text, font: 'Arial' }),
-        new TextRun({ text: text.substring(colonIdx + 1), size: 19, color: COLORS.text, font: 'Arial' }),
-      ]
-    : [new TextRun({ text, size: 19, color: COLORS.text, font: 'Arial' })];
-
-  return new Paragraph({
-    numbering: { reference: 'bullets', level: 0 },
-    spacing: { before: 40, after: 40 },
-    children,
-  });
-}
-
-function jobHeader(title, company, location, dates) {
-  return new Paragraph({
-    spacing: { before: 200, after: 50 },
-    tabStops: [{ type: TabStopType.RIGHT, position: 9360 }],
-    children: [
-      new TextRun({ text: title, bold: true, size: 21, color: COLORS.primary, font: 'Arial' }),
-      new TextRun({ text: '  ·  ', size: 19, color: COLORS.subtext, font: 'Arial' }),
-      new TextRun({ text: company, bold: true, size: 20, color: COLORS.accent, font: 'Arial' }),
-      new TextRun({ text: '  ·  ' + location, size: 18, color: COLORS.subtext, font: 'Arial' }),
-      new TextRun({ text: '\t', size: 18, font: 'Arial' }),
-      new TextRun({ text: dates, italics: true, size: 18, color: COLORS.subtext, font: 'Arial' }),
-    ],
-  });
-}
-
-function skillRow(label, value) {
-  return new TableRow({
-    children: [
-      new TableCell({
-        borders: noBorders,
-        width: { size: 2100, type: WidthType.DXA },
-        margins: { top: 55, bottom: 55, left: 0, right: 100 },
-        children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 19, color: COLORS.primary, font: 'Arial' })] })],
-      }),
-      new TableCell({
-        borders: noBorders,
-        width: { size: 7260, type: WidthType.DXA },
-        margins: { top: 55, bottom: 55, left: 0, right: 0 },
-        children: [new Paragraph({ children: [new TextRun({ text: value, size: 19, color: COLORS.text, font: 'Arial' })] })],
-      }),
-    ],
-  });
-}
-
-function metricCell(metric, label) {
-  return new TableCell({
-    borders: noBorders,
-    shading: { fill: COLORS.light, type: ShadingType.CLEAR },
-    width: { size: 2340, type: WidthType.DXA },
-    margins: { top: 120, bottom: 120, left: 140, right: 140 },
-    verticalAlign: VerticalAlign.CENTER,
-    children: [
-      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: metric, bold: true, size: 32, color: COLORS.primary, font: 'Arial' })] }),
-      new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 20 }, children: [new TextRun({ text: label, size: 16, color: COLORS.subtext, font: 'Arial' })] }),
-    ],
-  });
-}
-
-function para(text, { before = 60, after = 60, size = 19, color, bold = false, italics = false } = {}) {
-  return new Paragraph({
-    spacing: { before, after },
-    children: [new TextRun({ text, size, color: color || COLORS.text, font: 'Arial', bold, italics })],
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-const doc = new Document({
-  numbering: {
-    config: [{
-      reference: 'bullets',
-      levels: [{ level: 0, format: LevelFormat.BULLET, text: '▸', alignment: AlignmentType.LEFT,
-        style: { paragraph: { indent: { left: 480, hanging: 280 } } } }],
-    }],
-  },
-  styles: {
-    default: { document: { run: { font: 'Arial', size: 19, color: COLORS.text } } },
-  },
-  sections: [{
-    properties: {
-      page: {
-        size: { width: 12240, height: 15840 },
-        margin: { top: 864, right: 1080, bottom: 864, left: 1080 },
-      },
-    },
-    children: [
-
-      // NAME
-      new Paragraph({
-        spacing: { before: 0, after: 0 },
-        children: [
-          new TextRun({ text: 'RAJESH SOOD', bold: true, size: 58, color: COLORS.primary, font: 'Arial' }),
-          new TextRun({ text: ', MBA', size: 30, color: COLORS.accent, font: 'Arial' }),
-        ],
-      }),
-
-      // TAGLINE — dual target
-      new Paragraph({
-        spacing: { before: 50, after: 70 },
-        children: [new TextRun({
-          text: 'Senior Cloud & DevOps Engineer  ·  AI/ML Platform Engineering  ·  AWS · Kubernetes · Terraform · SRE  ·  Dublin, Ireland',
-          size: 20, color: COLORS.subtext, font: 'Arial',
-        })],
-      }),
-
-      rule(COLORS.primary, 14),
-
-      // CONTACT
-      new Paragraph({
-        spacing: { before: 70, after: 100 },
-        tabStops: [
-          { type: TabStopType.LEFT, position: 3100 },
-          { type: TabStopType.LEFT, position: 6000 },
-          { type: TabStopType.LEFT, position: 8300 },
-        ],
-        children: [
-          new TextRun({ text: '✉  [REDACTED-EMAIL]', size: 18, color: COLORS.subtext, font: 'Arial' }),
-          new TextRun({ text: '\t🔗  linkedin.com/in/irajeshsood', size: 18, color: COLORS.accent, font: 'Arial' }),
-          new TextRun({ text: '\t⌥  github.com/soodrajesh', size: 18, color: COLORS.accent, font: 'Arial' }),
-          new TextRun({ text: '\t📍  Dublin, Ireland', size: 18, color: COLORS.subtext, font: 'Arial' }),
-        ],
-      }),
-
-      // SUMMARY
-      ...sectionHeading('Professional Summary'),
-
-      para(
-        'With over 15 years of enterprise cloud experience, I build the platforms engineering teams rely on to ship fast without paying for it later in outages or security debt.',
-        { before: 80, after: 60 }
-      ),
-      para(
-        'At Workday, I lead DevOps and AI/ML platform engineering initiatives across multi-account AWS: designing SageMaker orchestration systems, building serverless RAG pipelines, and deploying production GenAI integrations via AWS Bedrock. Alongside that, I drive reliability improvements for critical EKS workloads, lead incident response for the systems I own, and drive FinOps practices that have contributed to $400K+ in cumulative cloud cost savings across my career.',
-        { before: 40, after: 60 }
-      ),
-      para(
-        'Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.',
-        { before: 40, after: 100 }
-      ),
-
-      // IMPACT METRICS
-      new Table({
-        width: { size: 9360, type: WidthType.DXA },
-        columnWidths: [2340, 2340, 2340, 2340],
-        rows: [new TableRow({ children: [
-          metricCell('$400K+',  'Cumulative Career Savings'),
-          metricCell('99.99%',  'Uptime SLA Delivered'),
-          metricCell('35%',     'Faster Deploy Cycles'),
-          metricCell('10+',     'Squads Using My Platform Work'),
-        ]})],
-      }),
-
-      // COMPETENCIES
-      ...sectionHeading('Core Technical Competencies'),
-
-      new Table({
-        width: { size: 9360, type: WidthType.DXA },
-        columnWidths: [2100, 7260],
-        rows: [
-          skillRow('AI/ML Platform:',     'AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops'),
-          skillRow('Cloud Architecture:', 'AWS (EKS, Advanced Networking, Serverless, Lambda) · Azure · GCP · OCI — multi-region, multi-account'),
-          skillRow('Platform Eng & IaC:', 'Terraform, CloudFormation, Helm, Ansible — GitOps-first delivery · Internal developer platforms · Self-service infra'),
-          skillRow('SRE & Reliability:',  'SLO/SLI/Error-budget design · Incident command · Chaos engineering · Splunk, Datadog, Prometheus/Grafana'),
-          skillRow('CI/CD & DevOps:',     'Jenkins, GitHub Actions, ArgoCD · Trunk-based delivery · Shift-left testing · 35% cycle-time reduction achieved'),
-          skillRow('Security & Compl.:',  'DevSecOps (Wiz, Snyk, SonarQube) · IAM zero-trust design · GDPR, SOC 2, HIPAA · Automated remediation pipelines'),
-          skillRow('AI-Augmented Eng:',   'GitHub Copilot, Cursor, Claude/Bedrock — IaC generation, log analysis, vulnerability auto-remediation workflows'),
-        ],
-      }),
-
-      // CERTIFICATIONS
-      ...sectionHeading('Certifications'),
-
-      new Paragraph({
-        spacing: { before: 80, after: 40 },
-        children: [
-          new TextRun({ text: '★  AWS Certified Solutions Architect – Professional', bold: true, size: 19, color: COLORS.primary, font: 'Arial' }),
-          new TextRun({ text: '  (Valid Dec 2026)  ·  credly.com/users/rajeshsood', size: 18, color: COLORS.subtext, font: 'Arial' }),
-        ],
-      }),
-      para(
-        'Previously Certified: Microsoft Azure (Exam 533)  ·  Google Cloud Professional Architect  ·  Oracle OCI Architect Professional & Associate',
-        { size: 18, color: COLORS.subtext, before: 20, after: 80 }
-      ),
-
-      // EXPERIENCE
-      ...sectionHeading('Professional Experience'),
-
-      // ── WORKDAY
-      jobHeader('Senior DevOps Engineer', 'Workday', 'Dublin, Ireland', 'Oct 2023 – Present'),
-      para(
-        'Leading DevOps and AI/ML platform engineering initiatives adopted across 10+ engineering squads in a globally distributed, high-scale SaaS environment.',
-        { before: 20, after: 70, italics: true, color: COLORS.subtext, size: 18 }
-      ),
-      bullet('AI/ML Platform Architecture: Designed and deployed scalable SageMaker infrastructure enabling data science teams to version, train, and serve models at enterprise scale — reducing model deployment lead time by 40%.'),
-      bullet('Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) for internal enterprise applications, spanning prompt engineering, vector search, and production observability.'),
-      bullet('SRE & Reliability: Drove SLO/SLI framework adoption and led incident response improvements for critical EKS microservices, contributing to sustained 99.99% uptime through chaos-informed capacity planning and structured on-call rotation.'),
-      bullet('Platform Modernisation: Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time for adopting squads.'),
-      bullet('Security Automation: Built AI-powered vulnerability remediation pipelines using Claude/Bedrock to auto-analyse Wiz findings and generate validated Terraform fixes — cutting mean remediation time by 60%.'),
-      bullet('FinOps Governance: Led cloud cost governance initiatives across multi-account AWS, including rightsizing, Reserved Instance strategy, and anomaly detection automation.'),
-      bullet('AI-Augmented Velocity: Drove 25% acceleration in IaC delivery through team-wide adoption of GitHub Copilot and Cursor tooling.'),
-
-      // ── PROTEGO
-      jobHeader('Cloud Infrastructure Engineer (SRE)', 'Protego Technologies', 'Dublin, Ireland', 'Sep 2022 – Oct 2023'),
-      bullet('Observability Architecture: Built global observability stack (Splunk + Datadog + Prometheus) with SLO/SLI alerting, reducing MTTR by 45% across high-availability financial services workloads.'),
-      bullet('Security Posture: Integrated Snyk and OWASP ZAP into automated pipelines as shift-left controls, reducing production vulnerabilities by 40%.'),
-      bullet('Reliability Engineering: Owned EKS cluster operations for HA financial services — capacity planning, incident command, and runbook-driven on-call rotation.'),
-
-      // ── HILTI
-      jobHeader('Cloud SysOps Engineer (Lead)', 'Hilti Asia IT Services', 'Kuala Lumpur, Malaysia', 'Dec 2019 – Aug 2022'),
-      bullet('Cost Optimisation: Delivered $120K in annual savings through Reserved Instance strategy and resource lifecycle automation across multi-region AWS.'),
-      bullet('Global Standardisation: Authored CloudFormation templates enforcing security and compliance baselines across 10+ AWS regions and business units.'),
-      bullet('Compliance Leadership: Led IAM governance program ensuring controls met enterprise SOC 2 and internal audit standards.'),
-
-      // ── MAXIS
-      jobHeader('Cloud Service Engineer', 'MAXIS Sdn Bhd', 'Kuala Lumpur, Malaysia', 'Jul 2018 – Dec 2019'),
-      bullet('Scale Migration: Architected and migrated 30+ enterprise applications to AWS with HA/DR configurations and zero-downtime cutovers.'),
-      bullet('RI Strategy: Spearheaded Reserved Instance purchasing program, reducing cloud expenditure by 15% ($80K annually).'),
-
-      // ── DXC
-      jobHeader('IT Service Delivery Consultant III (L3)', 'DXC Technology (formerly HPE)', 'Cyberjaya, Malaysia', 'Feb 2017 – Jun 2018'),
-      bullet('Multi-Cloud Operations: Provided L3 architectural support across hybrid environments (AWS, Hyper-V, VMware), managing 300+ EC2 instances across 8 enterprise accounts.'),
-      bullet('Automation: Developed health-check and remediation scripts that significantly reduced application downtime and manual escalation.'),
-
-      // ── EARLIER
-      new Paragraph({
-        spacing: { before: 180, after: 40 },
-        children: [new TextRun({ text: 'Earlier Career', bold: true, size: 20, color: COLORS.primary, font: 'Arial' })],
-      }),
-      para('Senior VMware Administrator (L3) · Softenger Malaysia (HPE client) · Oct 2016 – Jan 2017', { size: 18, color: COLORS.subtext, before: 30, after: 20 }),
-      para('Senior IT OS Analyst · Optum / UnitedHealth Group, Noida · Nov 2014 – Oct 2016  —  IaaS automation with HP BSA Suite; vSphere and vRealize Automation for self-service provisioning.', { size: 18, color: COLORS.subtext, before: 20, after: 20 }),
-      para('Associate Professional · CSC India (now DXC) · Oct 2012 – Nov 2014  —  Windows/Linux environments and VMware vSphere administration.', { size: 18, color: COLORS.subtext, before: 20, after: 20 }),
-      para('Dell International & HCL India · Jul 2010 – Oct 2012  —  Enterprise technical support, Active Directory, and network device administration.', { size: 18, color: COLORS.subtext, before: 20, after: 80 }),
-
-      // EDUCATION
-      ...sectionHeading('Education'),
-
-      new Paragraph({
-        spacing: { before: 80, after: 40 },
-        tabStops: [{ type: TabStopType.RIGHT, position: 9360 }],
-        children: [
-          new TextRun({ text: 'MBA in Information Technology', bold: true, size: 19, color: COLORS.primary, font: 'Arial' }),
-          new TextRun({ text: '  ·  Sikkim Manipal University, India', size: 19, color: COLORS.text, font: 'Arial' }),
-          new TextRun({ text: '\t', size: 19, font: 'Arial' }),
-          new TextRun({ text: '2015', italics: true, size: 18, color: COLORS.subtext, font: 'Arial' }),
-        ],
-      }),
-      new Paragraph({
-        spacing: { before: 30, after: 80 },
-        tabStops: [{ type: TabStopType.RIGHT, position: 9360 }],
-        children: [
-          new TextRun({ text: 'B.E. in Computer Science', bold: true, size: 19, color: COLORS.primary, font: 'Arial' }),
-          new TextRun({ text: '  ·  Visvesvaraya Technological University, Karnataka, India', size: 19, color: COLORS.text, font: 'Arial' }),
-          new TextRun({ text: '\t', size: 19, font: 'Arial' }),
-          new TextRun({ text: '2010', italics: true, size: 18, color: COLORS.subtext, font: 'Arial' }),
-        ],
-      }),
-
-    ],
-  }],
-});
-
-function generatePDF() {
-  const pdfDoc = new PDFDocument({ margin: 36 });
-  const pdfStream = fs.createWriteStream('Rajesh_Sood_Resume_2025.pdf');
-
-  pdfDoc.pipe(pdfStream);
-
-  // Title
-  pdfDoc.fontSize(28).font('Helvetica-Bold').fillColor(COLORS.primary).text('RAJESH SOOD');
-  pdfDoc.fontSize(12).fillColor(COLORS.accent).text(', MBA', { continued: false });
-
-  // Tagline
-  pdfDoc.fontSize(10).fillColor(COLORS.subtext)
-    .text('Senior Cloud & DevOps Engineer  ·  AI/ML Platform Engineering  ·  AWS · Kubernetes · Terraform · SRE  ·  Dublin, Ireland', { lineGap: 4 });
-
-  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.primary).stroke();
-  pdfDoc.moveTo(0, 0);
-
-  // Contact
-  pdfDoc.fontSize(9).fillColor(COLORS.subtext).text('✉  [REDACTED-EMAIL]  ·  🔗  linkedin.com/in/irajeshsood  ·  ⌥  github.com/soodrajesh  ·  📍  Dublin, Ireland', { lineGap: 2 });
-
-  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('PROFESSIONAL SUMMARY', { before: 12, after: 6 });
-  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
-  pdfDoc.moveTo(0, 0);
-
-  pdfDoc.fontSize(10).font('Helvetica').fillColor(COLORS.text)
-    .text('With over 15 years of enterprise cloud experience, I build the platforms engineering teams rely on to ship fast without paying for it later in outages or security debt.', { lineGap: 3 });
-  pdfDoc.text('At Workday, I lead DevOps and AI/ML platform engineering initiatives across multi-account AWS: designing SageMaker orchestration systems, building serverless RAG pipelines, and deploying production GenAI integrations via AWS Bedrock. Alongside that, I drive reliability improvements for critical EKS workloads, lead incident response for the systems I own, and drive FinOps practices that have contributed to $400K+ in cumulative cloud cost savings across my career.', { lineGap: 3 });
-  pdfDoc.text('Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.', { lineGap: 3 });
-
-  // Competencies
-  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('CORE TECHNICAL COMPETENCIES', { before: 12, after: 6 });
-  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
-  pdfDoc.moveTo(0, 0);
-
-  const skills = [
-    { label: 'AI/ML Platform:', value: 'AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops' },
-    { label: 'Cloud Architecture:', value: 'AWS (EKS, Advanced Networking, Serverless, Lambda) · Azure · GCP · OCI — multi-region, multi-account' },
-    { label: 'Platform Eng & IaC:', value: 'Terraform, CloudFormation, Helm, Ansible — GitOps-first delivery · Internal developer platforms · Self-service infra' },
-    { label: 'SRE & Reliability:', value: 'SLO/SLI/Error-budget design · Incident command · Chaos engineering · Splunk, Datadog, Prometheus/Grafana' },
-    { label: 'CI/CD & DevOps:', value: 'Jenkins, GitHub Actions, ArgoCD · Trunk-based delivery · Shift-left testing · 35% cycle-time reduction achieved' },
-  ];
-
-  skills.forEach(skill => {
-    pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.text).text(skill.label, { continued: true });
-    pdfDoc.font('Helvetica').fillColor(COLORS.text).text(` ${skill.value}`, { lineGap: 2 });
-  });
-
-  // Certifications
-  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('CERTIFICATIONS', { before: 12, after: 6 });
-  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
-  pdfDoc.moveTo(0, 0);
-
-  pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text('★  AWS Certified Solutions Architect – Professional', { continued: true });
-  pdfDoc.font('Helvetica').fillColor(COLORS.subtext).text('  (Valid Dec 2026)  ·  credly.com/users/rajeshsood', { lineGap: 2 });
-
-  // Experience
-  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('PROFESSIONAL EXPERIENCE', { before: 12, after: 6 });
-  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
-  pdfDoc.moveTo(0, 0);
-
-  const jobs = [
-    { title: 'Senior DevOps Engineer', company: 'Workday', location: 'Dublin, Ireland', dates: 'Oct 2023 – Present' },
-    { title: 'Cloud Infrastructure Engineer (SRE)', company: 'Protego Technologies', location: 'Dublin, Ireland', dates: 'Sep 2022 – Oct 2023' },
-  ];
-
-  jobs.forEach(job => {
-    pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text(job.title, { continued: true });
-    pdfDoc.font('Helvetica').fillColor(COLORS.accent).text(` · ${job.company}`, { continued: true });
-    pdfDoc.fillColor(COLORS.subtext).text(` · ${job.location}  `, { continued: true });
-    pdfDoc.font('Helvetica-Oblique').text(job.dates, { lineGap: 2 });
-    pdfDoc.fontSize(9).text('• AI/ML Platform Architecture: Designed and deployed scalable SageMaker infrastructure enabling data science teams to version, train, and serve models at enterprise scale.', { lineGap: 1 });
-    pdfDoc.text('• Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan).', { lineGap: 1 });
-  });
-
-  // Education
-  pdfDoc.fontSize(11).font('Helvetica-Bold').fillColor(COLORS.primary).text('EDUCATION', { before: 12, after: 6 });
-  pdfDoc.moveTo(50, pdfDoc.y).lineTo(550, pdfDoc.y).strokeColor(COLORS.accent).stroke();
-  pdfDoc.moveTo(0, 0);
-
-  pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text('MBA in Information Technology', { continued: true });
-  pdfDoc.font('Helvetica').fillColor(COLORS.text).text('  ·  Sikkim Manipal University, India', { continued: true });
-  pdfDoc.font('Helvetica-Oblique').fillColor(COLORS.subtext).text('  2015', { lineGap: 2 });
-
-  pdfDoc.fontSize(10).font('Helvetica-Bold').fillColor(COLORS.primary).text('B.E. in Computer Science', { continued: true });
-  pdfDoc.font('Helvetica').fillColor(COLORS.text).text('  ·  Visvesvaraya Technological University, Karnataka, India', { continued: true });
-  pdfDoc.font('Helvetica-Oblique').fillColor(COLORS.subtext).text('  2010', { lineGap: 2 });
-
-  pdfDoc.end();
-
-  return new Promise(resolve => {
-    pdfStream.on('finish', resolve);
-  });
-}
-
-Packer.toBuffer(doc).then(buf => {
-  fs.writeFileSync('Rajesh_Sood_Resume_2025.docx', buf);
-}).then(() => generatePDF()).then(() => {
+async function main() {
+  fs.writeFileSync('resume.html', htmlTemplate);
+  await generatePDF();
   console.log('Done');
-});
+}
+
+main().catch(console.error);
