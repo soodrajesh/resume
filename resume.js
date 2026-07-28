@@ -17,51 +17,51 @@ const htmlTemplate = `
   <title>Rajesh Sood Resume</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; line-height: 1.2; color: ${COLORS.text}; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.4; color: ${COLORS.text}; }
 
-    .header { border-bottom: 2pt solid ${COLORS.primary}; padding-bottom: 3pt; margin-bottom: 4pt; }
-    .name { font-size: 19pt; font-weight: 800; color: ${COLORS.primary}; }
-    .name .mba { font-size: 10.5pt; font-weight: 700; color: ${COLORS.accent}; }
-    .tagline { font-size: 8.8pt; color: ${COLORS.subtext}; margin-top: 1pt; }
-    .contact { font-size: 8.1pt; color: ${COLORS.subtext}; margin-top: 2pt; }
+    .header { border-bottom: 2.5pt solid ${COLORS.primary}; padding-bottom: 8pt; margin-bottom: 10pt; }
+    .name { font-size: 26pt; font-weight: 800; color: ${COLORS.primary}; }
+    .name .mba { font-size: 13pt; font-weight: 700; color: ${COLORS.accent}; }
+    .tagline { font-size: 10.5pt; color: ${COLORS.subtext}; margin-top: 3pt; }
+    .contact { font-size: 9.5pt; color: ${COLORS.subtext}; margin-top: 6pt; }
     .contact a { color: ${COLORS.accent}; text-decoration: none; }
-    .contact span { margin-right: 14pt; }
+    .contact span { margin-right: 16pt; }
 
-    .section-title { font-size: 10pt; font-weight: 800; color: ${COLORS.primary}; margin-top: 3pt; margin-bottom: 1pt; border-bottom: 1pt solid ${COLORS.accent}; padding-bottom: 0.5pt; }
+    .section-title { font-size: 12pt; font-weight: 800; color: ${COLORS.primary}; margin-top: 10pt; margin-bottom: 4pt; border-bottom: 1.5pt solid ${COLORS.accent}; padding-bottom: 2pt; }
 
-    .summary p { font-size: 8.5pt; line-height: 1.18; margin-bottom: 1.5pt; }
+    .summary p { font-size: 9.7pt; line-height: 1.4; margin-bottom: 4pt; }
 
-    .metrics { display: flex; gap: 6pt; margin-top: 3pt; margin-bottom: 3pt; }
-    .metric { flex: 1; background: ${COLORS.light}; padding: 3pt 6pt; text-align: center; border-radius: 3pt; }
-    .metric-value { font-size: 14pt; font-weight: 800; color: ${COLORS.primary}; line-height: 1.1; }
-    .metric-label { font-size: 7.3pt; color: ${COLORS.subtext}; margin-top: 1pt; }
+    .metrics { display: flex; gap: 8pt; margin-top: 7pt; margin-bottom: 7pt; }
+    .metric { flex: 1; background: ${COLORS.light}; padding: 7pt 8pt; text-align: center; border-radius: 4pt; }
+    .metric-value { font-size: 19pt; font-weight: 800; color: ${COLORS.primary}; line-height: 1.1; }
+    .metric-label { font-size: 8.5pt; color: ${COLORS.subtext}; margin-top: 2pt; }
 
-    .skills-table { width: 100%; border-collapse: collapse; font-size: 8.3pt; }
-    .skills-table td { padding: 1pt 4pt; vertical-align: top; line-height: 1.2; }
+    .skills-table { width: 100%; border-collapse: collapse; font-size: 9.7pt; }
+    .skills-table td { padding: 3pt 6pt; vertical-align: top; line-height: 1.35; }
     .skills-table td:first-child { font-weight: 700; color: ${COLORS.primary}; width: 15%; white-space: nowrap; }
 
-    .cert-item { font-size: 8.8pt; margin-bottom: 1.5pt; line-height: 1.2; }
+    .cert-item { font-size: 10pt; margin-bottom: 4pt; line-height: 1.35; }
     .cert-star { color: ${COLORS.primary}; font-weight: bold; }
     .cert-item a { color: ${COLORS.accent}; text-decoration: none; }
 
-    .job-header { display: flex; justify-content: space-between; align-items: baseline; margin-top: 2.5pt; margin-bottom: 0.5pt; font-size: 8.8pt; gap: 6pt; }
+    .job-header { display: flex; justify-content: space-between; align-items: baseline; margin-top: 7pt; margin-bottom: 1.5pt; font-size: 10pt; gap: 6pt; }
     .job-left { font-weight: 700; }
     .job-title { color: ${COLORS.primary}; }
     .job-company { color: ${COLORS.accent}; }
     .job-loc { color: ${COLORS.subtext}; font-weight: 400; }
-    .job-dates { font-size: 8.3pt; color: ${COLORS.subtext}; white-space: nowrap; font-style: italic; }
-    .job-intro { font-size: 8pt; font-style: italic; color: ${COLORS.subtext}; margin-bottom: 1pt; line-height: 1.15; }
+    .job-dates { font-size: 9.3pt; color: ${COLORS.subtext}; white-space: nowrap; font-style: italic; }
+    .job-intro { font-size: 9pt; font-style: italic; color: ${COLORS.subtext}; margin-bottom: 2pt; line-height: 1.3; }
 
-    .bullets { margin-left: 10pt; }
-    .bullet { font-size: 8.1pt; line-height: 1.15; margin-bottom: 0.3pt; padding-left: 8pt; text-indent: -8pt; }
+    .bullets { margin-left: 12pt; }
+    .bullet { font-size: 9.2pt; line-height: 1.3; margin-bottom: 2pt; padding-left: 10pt; text-indent: -10pt; }
     .bullet::before { content: '\\25B8  '; color: ${COLORS.accent}; font-weight: bold; }
 
-    .earlier-title { font-weight: 700; margin-top: 4pt; margin-bottom: 1pt; font-size: 8.7pt; }
-    .earlier-bullets { margin-left: 10pt; }
-    .earlier-item { font-size: 8pt; line-height: 1.15; margin-bottom: 0.3pt; padding-left: 8pt; text-indent: -8pt; }
+    .earlier-title { font-weight: 700; margin-top: 8pt; margin-bottom: 3pt; font-size: 9.8pt; }
+    .earlier-bullets { margin-left: 12pt; }
+    .earlier-item { font-size: 9.3pt; line-height: 1.3; margin-bottom: 2pt; padding-left: 10pt; text-indent: -10pt; }
     .earlier-item::before { content: '\\25AA  '; color: ${COLORS.text}; }
 
-    .education { display: flex; justify-content: space-between; font-size: 8.8pt; margin-bottom: 1pt; }
+    .education { display: flex; justify-content: space-between; font-size: 10pt; margin-bottom: 3pt; }
     .edu-right { color: ${COLORS.subtext}; font-style: italic; white-space: nowrap; margin-left: 8pt; }
   </style>
 </head>
@@ -198,7 +198,7 @@ async function generatePDF() {
     path: 'Rajesh_Sood_Resume_2025.pdf',
     format: 'letter',
     printBackground: true,
-    margin: { top: '0.1in', bottom: '0.08in', left: '0.48in', right: '0.48in' },
+    margin: { top: '0.5in', bottom: '0.5in', left: '0.65in', right: '0.65in' },
   });
   await browser.close();
 }
