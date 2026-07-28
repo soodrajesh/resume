@@ -19,19 +19,184 @@ const DOCX_COLORS = Object.fromEntries(
   Object.entries(COLORS).map(([k, v]) => [k, v.replace('#', '')])
 );
 
-const htmlTemplate = `
+// ── single source of truth for resume content ───────────────────────────────
+// Edit this object only. Both the HTML/PDF and the docx are rendered from it,
+// so the two output formats can never drift out of sync with each other.
+const CONTENT = {
+  name: 'RAJESH SOOD',
+  credential: 'MBA',
+  tagline: 'Senior Cloud & DevOps Engineer · AI/ML Platform Engineering · AWS · Kubernetes · Terraform · SRE',
+  contact: {
+    email: 'soodrajesh87@gmail.com',
+    linkedin: 'linkedin.com/in/rajeshsood',
+    github: 'github.com/soodrajesh',
+    location: 'Dublin, Ireland',
+  },
+
+  summary: [
+    'With over 15 years of enterprise cloud experience, I architect the platforms that engineering teams rely on to ship fast, stay resilient, and scale without surprises.',
+    'I lead DevOps and AI/ML platform engineering across multi-account AWS — building the infrastructure that powers internal AI products, documentation platforms, and GenAI integrations at enterprise scale. Alongside that, I set reliability standards across critical AWS workloads, own incident response frameworks, and drive FinOps governance that has compounded to $200K+ in cloud cost savings.',
+    'Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.',
+  ],
+
+  metrics: [
+    { value: '$200K+', label: 'Cloud Cost Savings' },
+    { value: '99.99%', label: 'Uptime SLA Delivered' },
+    { value: '35%', label: 'Faster Deploy Cycles' },
+  ],
+
+  competencies: [
+    { label: 'AI/ML Platform:', value: 'AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops' },
+    { label: 'Cloud Architecture:', value: 'AWS (EKS, Networking, Serverless) · Azure · GCP · OCI — multi-region, multi-account' },
+    { label: 'Platform Eng & IaC:', value: 'Terraform, CloudFormation, Helm, Ansible — Internal developer platforms · Self-service infra' },
+    { label: 'SRE & Reliability:', value: 'SLO/SLI/Error-budget design · Incident command · Splunk, Datadog, Prometheus/Grafana' },
+    { label: 'CI/CD & DevOps:', value: 'Jenkins, GitHub Actions · Shift-left testing · 35% cycle-time reduction achieved' },
+    { label: 'Security/Compliance:', value: 'DevSecOps (Wiz, Snyk, SonarQube) · IAM zero-trust design · GDPR, SOC 2, HIPAA · Automated remediation pipelines' },
+    { label: 'AI-Augmented Eng:', value: 'GitHub Copilot, Cursor, Claude/Bedrock — IaC generation, log analysis, vulnerability auto-remediation workflows' },
+  ],
+
+  certifications: {
+    primary: 'AWS Certified Solutions Architect – Professional',
+    primaryMeta: '(Valid Dec 2026)',
+    credlyUrl: 'credly.com/users/rajeshsood',
+    previous: 'Previously Certified: Microsoft Azure (Exam 533) · Google Cloud Professional Architect · Oracle OCI Architect Professional & Associate',
+  },
+
+  experience: [
+    {
+      title: 'Senior DevOps Engineer', company: 'Workday', location: 'Dublin, Ireland', dates: 'Oct 2023 – Present',
+      intro: "Leading DevOps and AI/ML platform engineering within Workday's enterprise AWS environment, enabling internal product and documentation teams.",
+      bullets: [
+        "AI/ML Platform Architecture: Designed and deployed SageMaker infrastructure enabling internal AI/ML teams to build, version, and serve models against Workday's documentation data — reducing model deployment lead time by 40%.",
+        'Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) powering internal AI chatbots and documentation search applications — spanning prompt engineering, vector search, and production observability.',
+        'SRE & Reliability: Owned SLO/SLI framework and incident response for critical EKS microservices, maintaining 99.99% uptime through capacity planning and structured on-call rotation.',
+        'Platform Modernisation: Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time across all squads.',
+        'Security Automation: Built AI-powered vulnerability remediation pipelines using Claude/Bedrock to auto-analyse PRs & Wiz findings and generate validated Terraform fixes — cutting mean remediation time by 60%.',
+        'FinOps Governance: Implemented cloud cost standards across multi-account AWS, driving $100K+ in cumulative savings through rightsizing, RI strategy, and anomaly detection automation.',
+        'AI-Augmented Velocity: Drove 25% acceleration in IaC delivery through team-wide adoption of GitHub Copilot and Cursor tooling.',
+      ],
+    },
+    {
+      title: 'Cloud Infrastructure Engineer (SRE)', company: 'Protego Technologies', location: 'Dublin, Ireland', dates: 'Sep 2022 – Oct 2023',
+      bullets: [
+        'Observability Architecture: Built global observability stack (Splunk + Datadog + Prometheus) with SLO/SLI alerting, reducing MTTR by 45% across high-availability financial services workloads.',
+        'Security Posture: Integrated Snyk and OWASP ZAP into automated pipelines as shift-left controls, reducing production vulnerabilities by 40%.',
+        'Reliability Engineering: Owned EKS cluster operations for HA financial services — capacity planning, incident command, and runbook-driven on-call rotation.',
+      ],
+    },
+    {
+      title: 'Cloud SysOps Engineer (Lead)', company: 'Hilti Asia IT Services', location: 'Kuala Lumpur, Malaysia', dates: 'Dec 2019 – Aug 2022',
+      bullets: [
+        'Cost Optimisation: Delivered $120K in annual savings through Reserved Instance strategy and resource lifecycle automation across multi-region AWS.',
+        'Global Standardisation: Authored CloudFormation templates enforcing security and compliance baselines across 10+ AWS regions and business units.',
+        'Compliance Leadership: Led IAM governance program ensuring controls met enterprise SOC 2 and internal audit standards.',
+      ],
+    },
+    {
+      title: 'Cloud Service Engineer', company: 'MAXIS Sdn Bhd', location: 'Kuala Lumpur, Malaysia', dates: 'Jul 2018 – Dec 2019',
+      bullets: [
+        'Scale Migration: Architected and migrated 30+ enterprise applications to AWS with HA/DR configurations and zero-downtime cutovers.',
+        'RI Strategy: Spearheaded Reserved Instance purchasing program, reducing cloud expenditure by 15% ($80K annually).',
+      ],
+    },
+    {
+      title: 'IT Service Delivery Consultant III (L3)', company: 'DXC Technology (formerly HPE)', location: 'Cyberjaya, Malaysia', dates: 'Feb 2017 – Jun 2018',
+      bullets: [
+        'Multi-Cloud Operations: Provided L3 architectural support across hybrid environments (AWS, Hyper-V, VMware), managing 300+ EC2 instances across 8 enterprise accounts.',
+        'Automation: Developed health-check and remediation scripts that significantly reduced application downtime and manual escalation.',
+      ],
+    },
+  ],
+
+  earlierCareer: [
+    'Senior VMware Administrator (L3) · Softenger Malaysia (HPE client) · Oct 2016 – Jan 2017',
+    'Senior IT OS Analyst · Optum / UnitedHealth Group, Noida · Nov 2014 – Oct 2016 — IaaS automation with HP BSA Suite; vSphere and vRealize Automation for self-service provisioning.',
+    'Associate Professional · CSC India (now DXC) · Oct 2012 – Nov 2014 — Windows/Linux environments and VMware vSphere administration.',
+    'Dell International & HCL India · Jul 2010 – Oct 2012 — Enterprise technical support, Active Directory, and network device administration.',
+  ],
+
+  education: [
+    { degree: 'MBA in Information Technology', school: 'Sikkim Manipal University, India', year: '2015' },
+    { degree: 'B.E. in Computer Science', school: 'Visvesvaraya Technological University, Karnataka, India', year: '2010' },
+  ],
+};
+
+// Bullets are stored as plain "Label: rest of sentence" strings. Both
+// renderers split on the same rule to bold the label — one definition,
+// two outputs.
+function splitBoldLabel(text) {
+  const colonIdx = text.indexOf(':');
+  if (colonIdx > -1 && colonIdx < 55) {
+    return { label: text.slice(0, colonIdx + 1), rest: text.slice(colonIdx + 1) };
+  }
+  return { label: null, rest: text };
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── HTML/PDF renderer ────────────────────────────────────────────────────────
+function htmlBullet(text) {
+  const { label, rest } = splitBoldLabel(text);
+  const body = label
+    ? `<strong>${escapeHtml(label)}</strong>${escapeHtml(rest)}`
+    : escapeHtml(rest);
+  return `    <div class="bullet">${body}</div>`;
+}
+
+function buildHtml(c) {
+  const competencyRows = c.competencies
+    .map(({ label, value }) => `    <tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`)
+    .join('\n');
+
+  const metricDivs = c.metrics
+    .map(({ value, label }) => `    <div class="metric">
+      <div class="metric-value">${escapeHtml(value)}</div>
+      <div class="metric-label">${escapeHtml(label)}</div>
+    </div>`)
+    .join('\n');
+
+  const experienceHtml = c.experience
+    .map(job => {
+      const introHtml = job.intro
+        ? `  <div class="job-intro">${escapeHtml(job.intro)}</div>\n`
+        : '';
+      const bulletsHtml = job.bullets.map(htmlBullet).join('\n');
+      return `  <div class="job-header">
+    <span class="job-left"><span class="job-title">${escapeHtml(job.title)}</span> · <span class="job-company">${escapeHtml(job.company)}</span> · <span class="job-loc">${escapeHtml(job.location)}</span></span>
+    <span class="job-dates">${escapeHtml(job.dates)}</span>
+  </div>
+${introHtml}  <div class="bullets">
+${bulletsHtml}
+  </div>`;
+    })
+    .join('\n\n');
+
+  const earlierHtml = c.earlierCareer
+    .map(item => `    <div class="earlier-item">${escapeHtml(item)}</div>`)
+    .join('\n');
+
+  const educationHtml = c.education
+    .map(({ degree, school, year }) => `  <div class="education">
+    <span><strong>${escapeHtml(degree)}</strong> · ${escapeHtml(school)}</span>
+    <span class="edu-right">${escapeHtml(year)}</span>
+  </div>`)
+    .join('\n');
+
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Rajesh Sood Resume</title>
+  <title>${escapeHtml(c.name)} Resume</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.4; color: ${COLORS.text}; }
 
     .header { border-bottom: 2.5pt solid ${COLORS.primary}; padding-bottom: 8pt; margin-bottom: 10pt; }
     .name { font-size: 26pt; font-weight: 800; color: ${COLORS.primary}; }
-    .name .mba { font-size: 13pt; font-weight: 700; color: ${COLORS.accent}; }
+    .name .credential { font-size: 13pt; font-weight: 700; color: ${COLORS.accent}; }
     .tagline { font-size: 10.5pt; color: ${COLORS.subtext}; margin-top: 3pt; }
     .contact { font-size: 9.5pt; color: ${COLORS.subtext}; margin-top: 6pt; }
     .contact a { color: ${COLORS.accent}; text-decoration: none; }
@@ -77,130 +242,51 @@ const htmlTemplate = `
 </head>
 <body>
   <div class="header">
-    <div class="name">RAJESH SOOD<span class="mba">, MBA</span></div>
-    <div class="tagline">Senior Cloud & DevOps Engineer · AI/ML Platform Engineering · AWS · Kubernetes · Terraform · SRE</div>
+    <div class="name">${escapeHtml(c.name)}<span class="credential">, ${escapeHtml(c.credential)}</span></div>
+    <div class="tagline">${escapeHtml(c.tagline)}</div>
     <div class="contact">
-      <span>&#9993; soodrajesh87@gmail.com</span>
-      <span>&#128279; <a href="https://linkedin.com/in/rajeshsood">linkedin.com/in/rajeshsood</a></span>
-      <span>&#8997; <a href="https://github.com/soodrajesh">github.com/soodrajesh</a></span>
-      <span>&#128205; Dublin, Ireland</span>
+      <span>&#9993; ${escapeHtml(c.contact.email)}</span>
+      <span>&#128279; <a href="https://${c.contact.linkedin}">${escapeHtml(c.contact.linkedin)}</a></span>
+      <span>&#8997; <a href="https://${c.contact.github}">${escapeHtml(c.contact.github)}</a></span>
+      <span>&#128205; ${escapeHtml(c.contact.location)}</span>
     </div>
   </div>
 
   <div class="section-title">PROFESSIONAL SUMMARY</div>
   <div class="summary">
-    <p>With over 15 years of enterprise cloud experience, I architect the platforms that engineering teams rely on to ship fast, stay resilient, and scale without surprises.</p>
-    <p>I lead DevOps and AI/ML platform engineering across multi-account AWS — building the infrastructure that powers internal AI products, documentation platforms, and GenAI integrations at enterprise scale. Alongside that, I set reliability standards across critical AWS workloads, own incident response frameworks, and drive FinOps governance that has compounded to $200K+ in cloud cost savings.</p>
-    <p>Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.</p>
+${c.summary.map(p => `    <p>${escapeHtml(p)}</p>`).join('\n')}
   </div>
 
   <div class="metrics">
-    <div class="metric">
-      <div class="metric-value">$200K+</div>
-      <div class="metric-label">Cloud Cost Savings</div>
-    </div>
-    <div class="metric">
-      <div class="metric-value">99.99%</div>
-      <div class="metric-label">Uptime SLA Delivered</div>
-    </div>
-    <div class="metric">
-      <div class="metric-value">35%</div>
-      <div class="metric-label">Faster Deploy Cycles</div>
-    </div>
+${metricDivs}
   </div>
 
   <div class="section-title">CORE TECHNICAL COMPETENCIES</div>
   <table class="skills-table">
-    <tr><td>AI/ML Platform:</td><td>AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops</td></tr>
-    <tr><td>Cloud Architecture:</td><td>AWS (EKS, Networking, Serverless) · Azure · GCP · OCI — multi-region, multi-account</td></tr>
-    <tr><td>Platform Eng & IaC:</td><td>Terraform, CloudFormation, Helm, Ansible — Internal developer platforms · Self-service infra</td></tr>
-    <tr><td>SRE & Reliability:</td><td>SLO/SLI/Error-budget design · Incident command · Splunk, Datadog, Prometheus/Grafana</td></tr>
-    <tr><td>CI/CD & DevOps:</td><td>Jenkins, GitHub Actions · Shift-left testing · 35% cycle-time reduction achieved</td></tr>
-    <tr><td>Security/Compliance:</td><td>DevSecOps (Wiz, Snyk, SonarQube) · IAM zero-trust design · GDPR, SOC 2, HIPAA · Automated remediation pipelines</td></tr>
-    <tr><td>AI-Augmented Eng:</td><td>GitHub Copilot, Cursor, Claude/Bedrock — IaC generation, log analysis, vulnerability auto-remediation workflows</td></tr>
+${competencyRows}
   </table>
 
   <div class="section-title">CERTIFICATIONS</div>
-  <div class="cert-item"><span class="cert-star">&#9733;</span> <strong>AWS Certified Solutions Architect – Professional</strong> (Valid Dec 2026) · <a href="https://credly.com/users/rajeshsood">credly.com/users/rajeshsood</a></div>
-  <div class="cert-item">Previously Certified: Microsoft Azure (Exam 533) · Google Cloud Professional Architect · Oracle OCI Architect Professional & Associate</div>
+  <div class="cert-item"><span class="cert-star">&#9733;</span> <strong>${escapeHtml(c.certifications.primary)}</strong> ${escapeHtml(c.certifications.primaryMeta)} · <a href="https://${c.certifications.credlyUrl}">${escapeHtml(c.certifications.credlyUrl)}</a></div>
+  <div class="cert-item">${escapeHtml(c.certifications.previous)}</div>
 
   <div class="section-title">PROFESSIONAL EXPERIENCE</div>
 
-  <div class="job-header">
-    <span class="job-left"><span class="job-title">Senior DevOps Engineer</span> · <span class="job-company">Workday</span> · <span class="job-loc">Dublin, Ireland</span></span>
-    <span class="job-dates">Oct 2023 – Present</span>
-  </div>
-  <div class="job-intro">Leading DevOps and AI/ML platform engineering within Workday's enterprise AWS environment, enabling internal product and documentation teams.</div>
-  <div class="bullets">
-    <div class="bullet"><strong>AI/ML Platform Architecture:</strong> Designed and deployed SageMaker infrastructure enabling internal AI/ML teams to build, version, and serve models against Workday's documentation data — reducing model deployment lead time by 40%.</div>
-    <div class="bullet"><strong>Generative AI Integration:</strong> Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) powering internal AI chatbots and documentation search applications — spanning prompt engineering, vector search, and production observability.</div>
-    <div class="bullet"><strong>SRE & Reliability:</strong> Owned SLO/SLI framework and incident response for critical EKS microservices, maintaining 99.99% uptime through capacity planning and structured on-call rotation.</div>
-    <div class="bullet"><strong>Platform Modernisation:</strong> Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time across all squads.</div>
-    <div class="bullet"><strong>Security Automation:</strong> Built AI-powered vulnerability remediation pipelines using Claude/Bedrock to auto-analyse PRs & Wiz findings and generate validated Terraform fixes — cutting mean remediation time by 60%.</div>
-    <div class="bullet"><strong>FinOps Governance:</strong> Implemented cloud cost standards across multi-account AWS, driving $100K+ in cumulative savings through rightsizing, RI strategy, and anomaly detection automation.</div>
-    <div class="bullet"><strong>AI-Augmented Velocity:</strong> Drove 25% acceleration in IaC delivery through team-wide adoption of GitHub Copilot and Cursor tooling.</div>
-  </div>
-
-  <div class="job-header">
-    <span class="job-left"><span class="job-title">Cloud Infrastructure Engineer (SRE)</span> · <span class="job-company">Protego Technologies</span> · <span class="job-loc">Dublin, Ireland</span></span>
-    <span class="job-dates">Sep 2022 – Oct 2023</span>
-  </div>
-  <div class="bullets">
-    <div class="bullet"><strong>Observability Architecture:</strong> Built global observability stack (Splunk + Datadog + Prometheus) with SLO/SLI alerting, reducing MTTR by 45% across high-availability financial services workloads.</div>
-    <div class="bullet"><strong>Security Posture:</strong> Integrated Snyk and OWASP ZAP into automated pipelines as shift-left controls, reducing production vulnerabilities by 40%.</div>
-    <div class="bullet"><strong>Reliability Engineering:</strong> Owned EKS cluster operations for HA financial services — capacity planning, incident command, and runbook-driven on-call rotation.</div>
-  </div>
-
-  <div class="job-header">
-    <span class="job-left"><span class="job-title">Cloud SysOps Engineer (Lead)</span> · <span class="job-company">Hilti Asia IT Services</span> · <span class="job-loc">Kuala Lumpur, Malaysia</span></span>
-    <span class="job-dates">Dec 2019 – Aug 2022</span>
-  </div>
-  <div class="bullets">
-    <div class="bullet"><strong>Cost Optimisation:</strong> Delivered $120K in annual savings through Reserved Instance strategy and resource lifecycle automation across multi-region AWS.</div>
-    <div class="bullet"><strong>Global Standardisation:</strong> Authored CloudFormation templates enforcing security and compliance baselines across 10+ AWS regions and business units.</div>
-    <div class="bullet"><strong>Compliance Leadership:</strong> Led IAM governance program ensuring controls met enterprise SOC 2 and internal audit standards.</div>
-  </div>
-
-  <div class="job-header">
-    <span class="job-left"><span class="job-title">Cloud Service Engineer</span> · <span class="job-company">MAXIS Sdn Bhd</span> · <span class="job-loc">Kuala Lumpur, Malaysia</span></span>
-    <span class="job-dates">Jul 2018 – Dec 2019</span>
-  </div>
-  <div class="bullets">
-    <div class="bullet"><strong>Scale Migration:</strong> Architected and migrated 30+ enterprise applications to AWS with HA/DR configurations and zero-downtime cutovers.</div>
-    <div class="bullet"><strong>RI Strategy:</strong> Spearheaded Reserved Instance purchasing program, reducing cloud expenditure by 15% ($80K annually).</div>
-  </div>
-
-  <div class="job-header">
-    <span class="job-left"><span class="job-title">IT Service Delivery Consultant III (L3)</span> · <span class="job-company">DXC Technology (formerly HPE)</span> · <span class="job-loc">Cyberjaya, Malaysia</span></span>
-    <span class="job-dates">Feb 2017 – Jun 2018</span>
-  </div>
-  <div class="bullets">
-    <div class="bullet"><strong>Multi-Cloud Operations:</strong> Provided L3 architectural support across hybrid environments (AWS, Hyper-V, VMware), managing 300+ EC2 instances across 8 enterprise accounts.</div>
-    <div class="bullet"><strong>Automation:</strong> Developed health-check and remediation scripts that significantly reduced application downtime and manual escalation.</div>
-  </div>
+${experienceHtml}
 
   <div class="earlier-title">Earlier Career</div>
   <div class="earlier-bullets">
-    <div class="earlier-item">Senior VMware Administrator (L3) · Softenger Malaysia (HPE client) · Oct 2016 – Jan 2017</div>
-    <div class="earlier-item">Senior IT OS Analyst · Optum / UnitedHealth Group, Noida · Nov 2014 – Oct 2016 — IaaS automation with HP BSA Suite; vSphere and vRealize Automation for self-service provisioning.</div>
-    <div class="earlier-item">Associate Professional · CSC India (now DXC) · Oct 2012 – Nov 2014 — Windows/Linux environments and VMware vSphere administration.</div>
-    <div class="earlier-item">Dell International & HCL India · Jul 2010 – Oct 2012 — Enterprise technical support, Active Directory, and network device administration.</div>
+${earlierHtml}
   </div>
 
   <div class="section-title">EDUCATION</div>
-  <div class="education">
-    <span><strong>MBA in Information Technology</strong> · Sikkim Manipal University, India</span>
-    <span class="edu-right">2015</span>
-  </div>
-  <div class="education">
-    <span><strong>B.E. in Computer Science</strong> · Visvesvaraya Technological University, Karnataka, India</span>
-    <span class="edu-right">2010</span>
-  </div>
+${educationHtml}
 </body>
 </html>
 `;
+}
 
-// ── docx helpers ─────────────────────────────────────────────────────────────
+// ── docx renderer ────────────────────────────────────────────────────────────
 const noBorder  = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
 
@@ -223,13 +309,13 @@ function docxSectionHeading(text) {
 }
 
 function docxBullet(text) {
-  const colonIdx = text.indexOf(':');
-  const children = (colonIdx > -1 && colonIdx < 55)
+  const { label, rest } = splitBoldLabel(text);
+  const children = label
     ? [
-        new TextRun({ text: text.substring(0, colonIdx + 1), bold: true, size: 18, color: DOCX_COLORS.text, font: 'Arial' }),
-        new TextRun({ text: text.substring(colonIdx + 1), size: 18, color: DOCX_COLORS.text, font: 'Arial' }),
+        new TextRun({ text: label, bold: true, size: 18, color: DOCX_COLORS.text, font: 'Arial' }),
+        new TextRun({ text: rest, size: 18, color: DOCX_COLORS.text, font: 'Arial' }),
       ]
-    : [new TextRun({ text, size: 18, color: DOCX_COLORS.text, font: 'Arial' })];
+    : [new TextRun({ text: rest, size: 18, color: DOCX_COLORS.text, font: 'Arial' })];
 
   return new Paragraph({
     numbering: { reference: 'bullets', level: 0 },
@@ -306,8 +392,14 @@ function docxEducationRow(degree, school, year) {
   });
 }
 
-async function generateDocx() {
-  const doc = new Document({
+function buildDocx(c) {
+  const experienceChildren = c.experience.flatMap(job => [
+    docxJobHeader(job.title, job.company, job.location, job.dates),
+    ...(job.intro ? [docxPara(job.intro, { before: 20, after: 70, italics: true, color: DOCX_COLORS.subtext, size: 17 })] : []),
+    ...job.bullets.map(docxBullet),
+  ]);
+
+  return new Document({
     numbering: {
       config: [{
         reference: 'bullets',
@@ -329,16 +421,13 @@ async function generateDocx() {
         new Paragraph({
           spacing: { before: 0, after: 0 },
           children: [
-            new TextRun({ text: 'RAJESH SOOD', bold: true, size: 52, color: DOCX_COLORS.primary, font: 'Arial' }),
-            new TextRun({ text: ', MBA', size: 26, color: DOCX_COLORS.accent, font: 'Arial' }),
+            new TextRun({ text: c.name, bold: true, size: 52, color: DOCX_COLORS.primary, font: 'Arial' }),
+            new TextRun({ text: ', ' + c.credential, size: 26, color: DOCX_COLORS.accent, font: 'Arial' }),
           ],
         }),
         new Paragraph({
           spacing: { before: 50, after: 70 },
-          children: [new TextRun({
-            text: 'Senior Cloud & DevOps Engineer · AI/ML Platform Engineering · AWS · Kubernetes · Terraform · SRE',
-            size: 21, color: DOCX_COLORS.subtext, font: 'Arial',
-          })],
+          children: [new TextRun({ text: c.tagline, size: 21, color: DOCX_COLORS.subtext, font: 'Arial' })],
         }),
         docxRule(DOCX_COLORS.primary, 14),
         new Paragraph({
@@ -349,123 +438,64 @@ async function generateDocx() {
             { type: TabStopType.LEFT, position: 8300 },
           ],
           children: [
-            new TextRun({ text: '✉  soodrajesh87@gmail.com', size: 19, color: DOCX_COLORS.subtext, font: 'Arial' }),
-            new TextRun({ text: '\t🔗  linkedin.com/in/rajeshsood', size: 19, color: DOCX_COLORS.accent, font: 'Arial' }),
-            new TextRun({ text: '\t⌥  github.com/soodrajesh', size: 19, color: DOCX_COLORS.accent, font: 'Arial' }),
-            new TextRun({ text: '\t📍  Dublin, Ireland', size: 19, color: DOCX_COLORS.subtext, font: 'Arial' }),
+            new TextRun({ text: `✉  ${c.contact.email}`, size: 19, color: DOCX_COLORS.subtext, font: 'Arial' }),
+            new TextRun({ text: `\t🔗  ${c.contact.linkedin}`, size: 19, color: DOCX_COLORS.accent, font: 'Arial' }),
+            new TextRun({ text: `\t⌥  ${c.contact.github}`, size: 19, color: DOCX_COLORS.accent, font: 'Arial' }),
+            new TextRun({ text: `\t📍  ${c.contact.location}`, size: 19, color: DOCX_COLORS.subtext, font: 'Arial' }),
           ],
         }),
 
         ...docxSectionHeading('Professional Summary'),
-        docxPara(
-          'With over 15 years of enterprise cloud experience, I architect the platforms that engineering teams rely on to ship fast, stay resilient, and scale without surprises.',
-          { before: 80, after: 60 }
-        ),
-        docxPara(
-          'I lead DevOps and AI/ML platform engineering across multi-account AWS — building the infrastructure that powers internal AI products, documentation platforms, and GenAI integrations at enterprise scale. Alongside that, I set reliability standards across critical AWS workloads, own incident response frameworks, and drive FinOps governance that has compounded to $200K+ in cloud cost savings.',
-          { before: 40, after: 60 }
-        ),
-        docxPara(
-          'Technical depth spans cloud architecture, Kubernetes, Terraform, SRE, and AI-augmented engineering — using Claude, Bedrock, and GitHub Copilot as everyday tools for IaC generation, log analysis, and automated remediation workflows.',
-          { before: 40, after: 100 }
-        ),
+        docxPara(c.summary[0], { before: 80, after: 60 }),
+        docxPara(c.summary[1], { before: 40, after: 60 }),
+        docxPara(c.summary[2], { before: 40, after: 100 }),
 
         new Table({
           width: { size: 9360, type: WidthType.DXA },
-          columnWidths: [3120, 3120, 3120],
-          rows: [new TableRow({ children: [
-            docxMetricCell('$200K+', 'Cloud Cost Savings'),
-            docxMetricCell('99.99%', 'Uptime SLA Delivered'),
-            docxMetricCell('35%',    'Faster Deploy Cycles'),
-          ]})],
+          columnWidths: c.metrics.map(() => Math.floor(9360 / c.metrics.length)),
+          rows: [new TableRow({ children: c.metrics.map(m => docxMetricCell(m.value, m.label)) })],
         }),
 
         ...docxSectionHeading('Core Technical Competencies'),
         new Table({
           width: { size: 9360, type: WidthType.DXA },
           columnWidths: [2100, 7260],
-          rows: [
-            docxSkillRow('AI/ML Platform:', 'AWS SageMaker, AWS Bedrock, RAG Pipeline Design, LLM Integration (Claude, Titan), GenAI Ops'),
-            docxSkillRow('Cloud Architecture:', 'AWS (EKS, Networking, Serverless) · Azure · GCP · OCI — multi-region, multi-account'),
-            docxSkillRow('Platform Eng & IaC:', 'Terraform, CloudFormation, Helm, Ansible — Internal developer platforms · Self-service infra'),
-            docxSkillRow('SRE & Reliability:', 'SLO/SLI/Error-budget design · Incident command · Splunk, Datadog, Prometheus/Grafana'),
-            docxSkillRow('CI/CD & DevOps:', 'Jenkins, GitHub Actions · Shift-left testing · 35% cycle-time reduction achieved'),
-            docxSkillRow('Security/Compliance:', 'DevSecOps (Wiz, Snyk, SonarQube) · IAM zero-trust design · GDPR, SOC 2, HIPAA · Automated remediation pipelines'),
-            docxSkillRow('AI-Augmented Eng:', 'GitHub Copilot, Cursor, Claude/Bedrock — IaC generation, log analysis, vulnerability auto-remediation workflows'),
-          ],
+          rows: c.competencies.map(({ label, value }) => docxSkillRow(label, value)),
         }),
 
         ...docxSectionHeading('Certifications'),
         new Paragraph({
           spacing: { before: 80, after: 40 },
           children: [
-            new TextRun({ text: '★  AWS Certified Solutions Architect – Professional', bold: true, size: 18, color: DOCX_COLORS.primary, font: 'Arial' }),
-            new TextRun({ text: '  (Valid Dec 2026)  ·  credly.com/users/rajeshsood', size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
+            new TextRun({ text: `★  ${c.certifications.primary}`, bold: true, size: 18, color: DOCX_COLORS.primary, font: 'Arial' }),
+            new TextRun({ text: `  ${c.certifications.primaryMeta}  ·  ${c.certifications.credlyUrl}`, size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
           ],
         }),
-        docxPara(
-          'Previously Certified: Microsoft Azure (Exam 533) · Google Cloud Professional Architect · Oracle OCI Architect Professional & Associate',
-          { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 80 }
-        ),
+        docxPara(c.certifications.previous, { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 80 }),
 
         ...docxSectionHeading('Professional Experience'),
-
-        docxJobHeader('Senior DevOps Engineer', 'Workday', 'Dublin, Ireland', 'Oct 2023 – Present'),
-        docxPara(
-          "Leading DevOps and AI/ML platform engineering within Workday's enterprise AWS environment, enabling internal product and documentation teams.",
-          { before: 20, after: 70, italics: true, color: DOCX_COLORS.subtext, size: 17 }
-        ),
-        docxBullet("AI/ML Platform Architecture: Designed and deployed SageMaker infrastructure enabling internal AI/ML teams to build, version, and serve models against Workday's documentation data — reducing model deployment lead time by 40%."),
-        docxBullet('Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) powering internal AI chatbots and documentation search applications — spanning prompt engineering, vector search, and production observability.'),
-        docxBullet('SRE & Reliability: Owned SLO/SLI framework and incident response for critical EKS microservices, maintaining 99.99% uptime through capacity planning and structured on-call rotation.'),
-        docxBullet('Platform Modernisation: Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time across all squads.'),
-        docxBullet('Security Automation: Built AI-powered vulnerability remediation pipelines using Claude/Bedrock to auto-analyse PRs & Wiz findings and generate validated Terraform fixes — cutting mean remediation time by 60%.'),
-        docxBullet('FinOps Governance: Implemented cloud cost standards across multi-account AWS, driving $100K+ in cumulative savings through rightsizing, RI strategy, and anomaly detection automation.'),
-        docxBullet('AI-Augmented Velocity: Drove 25% acceleration in IaC delivery through team-wide adoption of GitHub Copilot and Cursor tooling.'),
-
-        docxJobHeader('Cloud Infrastructure Engineer (SRE)', 'Protego Technologies', 'Dublin, Ireland', 'Sep 2022 – Oct 2023'),
-        docxBullet('Observability Architecture: Built global observability stack (Splunk + Datadog + Prometheus) with SLO/SLI alerting, reducing MTTR by 45% across high-availability financial services workloads.'),
-        docxBullet('Security Posture: Integrated Snyk and OWASP ZAP into automated pipelines as shift-left controls, reducing production vulnerabilities by 40%.'),
-        docxBullet('Reliability Engineering: Owned EKS cluster operations for HA financial services — capacity planning, incident command, and runbook-driven on-call rotation.'),
-
-        docxJobHeader('Cloud SysOps Engineer (Lead)', 'Hilti Asia IT Services', 'Kuala Lumpur, Malaysia', 'Dec 2019 – Aug 2022'),
-        docxBullet('Cost Optimisation: Delivered $120K in annual savings through Reserved Instance strategy and resource lifecycle automation across multi-region AWS.'),
-        docxBullet('Global Standardisation: Authored CloudFormation templates enforcing security and compliance baselines across 10+ AWS regions and business units.'),
-        docxBullet('Compliance Leadership: Led IAM governance program ensuring controls met enterprise SOC 2 and internal audit standards.'),
-
-        docxJobHeader('Cloud Service Engineer', 'MAXIS Sdn Bhd', 'Kuala Lumpur, Malaysia', 'Jul 2018 – Dec 2019'),
-        docxBullet('Scale Migration: Architected and migrated 30+ enterprise applications to AWS with HA/DR configurations and zero-downtime cutovers.'),
-        docxBullet('RI Strategy: Spearheaded Reserved Instance purchasing program, reducing cloud expenditure by 15% ($80K annually).'),
-
-        docxJobHeader('IT Service Delivery Consultant III (L3)', 'DXC Technology (formerly HPE)', 'Cyberjaya, Malaysia', 'Feb 2017 – Jun 2018'),
-        docxBullet('Multi-Cloud Operations: Provided L3 architectural support across hybrid environments (AWS, Hyper-V, VMware), managing 300+ EC2 instances across 8 enterprise accounts.'),
-        docxBullet('Automation: Developed health-check and remediation scripts that significantly reduced application downtime and manual escalation.'),
+        ...experienceChildren,
 
         new Paragraph({
           spacing: { before: 180, after: 40 },
           children: [new TextRun({ text: 'Earlier Career', bold: true, size: 19, color: DOCX_COLORS.primary, font: 'Arial' })],
         }),
-        docxPara('Senior VMware Administrator (L3) · Softenger Malaysia (HPE client) · Oct 2016 – Jan 2017', { size: 17, color: DOCX_COLORS.subtext, before: 30, after: 20 }),
-        docxPara('Senior IT OS Analyst · Optum / UnitedHealth Group, Noida · Nov 2014 – Oct 2016 — IaaS automation with HP BSA Suite; vSphere and vRealize Automation for self-service provisioning.', { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 20 }),
-        docxPara('Associate Professional · CSC India (now DXC) · Oct 2012 – Nov 2014 — Windows/Linux environments and VMware vSphere administration.', { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 20 }),
-        docxPara('Dell International & HCL India · Jul 2010 – Oct 2012 — Enterprise technical support, Active Directory, and network device administration.', { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 80 }),
+        ...c.earlierCareer.map((item, i) =>
+          docxPara(item, { size: 17, color: DOCX_COLORS.subtext, before: i === 0 ? 30 : 20, after: i === c.earlierCareer.length - 1 ? 80 : 20 })
+        ),
 
         ...docxSectionHeading('Education'),
-        docxEducationRow('MBA in Information Technology', 'Sikkim Manipal University, India', '2015'),
-        docxEducationRow('B.E. in Computer Science', 'Visvesvaraya Technological University, Karnataka, India', '2010'),
+        ...c.education.map(({ degree, school, year }) => docxEducationRow(degree, school, year)),
       ],
     }],
   });
-
-  const buf = await Packer.toBuffer(doc);
-  fs.writeFileSync('Rajesh_Sood_Resume_2026.docx', buf);
 }
 
-async function generatePDF() {
+async function generatePDF(html) {
   const browser = await puppeteer.launch();
   try {
     const page = await browser.newPage();
-    await page.setContent(htmlTemplate);
+    await page.setContent(html);
     await page.pdf({
       path: 'Rajesh_Sood_Resume_2026.pdf',
       format: 'letter',
@@ -477,9 +507,16 @@ async function generatePDF() {
   }
 }
 
+async function generateDocx() {
+  const doc = buildDocx(CONTENT);
+  const buf = await Packer.toBuffer(doc);
+  fs.writeFileSync('Rajesh_Sood_Resume_2026.docx', buf);
+}
+
 async function main() {
-  fs.writeFileSync('resume.html', htmlTemplate);
-  await generatePDF();
+  const html = buildHtml(CONTENT);
+  fs.writeFileSync('resume.html', html);
+  await generatePDF(html);
   await generateDocx();
   console.log('Done');
 }

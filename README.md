@@ -17,6 +17,8 @@ node resume.js
 
 ## Editing
 
-The HTML/PDF and the docx are built from two independent content blocks in `resume.js` — the HTML template string and the `generateDocx()` function. Editing one does not update the other; update both if you change content. Re-run `node resume.js` to regenerate all three files.
+All resume content — name, summary, metrics, competencies, certifications, job history, education — lives in one place: the `CONTENT` object near the top of `resume.js`. Edit it once; `resume.html`, the PDF, and the docx are all rendered from that same object, so they can't drift out of sync with each other. Re-run `node resume.js` to regenerate all three.
 
-The script uses Puppeteer to render the HTML to a pixel-perfect PDF, and the `docx` library to build the Word version natively (not converted from the HTML), so both share the same colors and structure but are generated independently.
+Bullet points are plain `"Label: rest of sentence"` strings — both renderers bold everything before the first colon automatically.
+
+The script uses Puppeteer to render HTML to a pixel-perfect PDF, and the `docx` library to build the Word version natively from the same `CONTENT` object (not converted from the HTML), so all three outputs share identical text, colors, and structure.
