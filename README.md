@@ -12,7 +12,7 @@ node resume.js
 ## Output Files
 
 - `resume.html` — Interactive HTML version (view in any browser)
-- `Rajesh_Sood_Resume_2025.pdf` — PDF export (ready to send/print)
+- `Rajesh_Sood_Resume_2026.pdf` — PDF export (ready to send/print)
 
 ## Editing
 

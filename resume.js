@@ -192,15 +192,18 @@ const htmlTemplate = `
 
 async function generatePDF() {
   const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.setContent(htmlTemplate);
-  await page.pdf({
-    path: 'Rajesh_Sood_Resume_2025.pdf',
-    format: 'letter',
-    printBackground: true,
-    margin: { top: '0.5in', bottom: '0.5in', left: '0.65in', right: '0.65in' },
-  });
-  await browser.close();
+  try {
+    const page = await browser.newPage();
+    await page.setContent(htmlTemplate);
+    await page.pdf({
+      path: 'Rajesh_Sood_Resume_2026.pdf',
+      format: 'letter',
+      printBackground: true,
+      margin: { top: '0.5in', bottom: '0.5in', left: '0.65in', right: '0.65in' },
+    });
+  } finally {
+    await browser.close();
+  }
 }
 
 async function main() {
