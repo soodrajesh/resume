@@ -59,6 +59,8 @@ const CONTENT = {
     primary: 'AWS Certified Solutions Architect – Professional',
     primaryMeta: '(Valid Dec 2026)',
     credlyUrl: 'credly.com/users/rajeshsood',
+    secondary: 'AWS Certified Generative AI Developer – Professional',
+    secondaryMeta: '(Valid Nov 2029)',
     previous: 'Previously Certified: Microsoft Azure (Exam 533) · Google Cloud Professional Architect · Oracle OCI Architect Professional & Associate',
   },
 
@@ -268,6 +270,7 @@ ${competencyRows}
 
   <div class="section-title">CERTIFICATIONS</div>
   <div class="cert-item"><span class="cert-star">&#9733;</span> <strong>${escapeHtml(c.certifications.primary)}</strong> ${escapeHtml(c.certifications.primaryMeta)} · <a href="https://${c.certifications.credlyUrl}">${escapeHtml(c.certifications.credlyUrl)}</a></div>
+  <div class="cert-item"><span class="cert-star">&#9733;</span> <strong>${escapeHtml(c.certifications.secondary)}</strong> ${escapeHtml(c.certifications.secondaryMeta)}</div>
   <div class="cert-item">${escapeHtml(c.certifications.previous)}</div>
 
   <div class="section-title">PROFESSIONAL EXPERIENCE</div>
@@ -469,6 +472,13 @@ function buildDocx(c) {
           children: [
             new TextRun({ text: `★  ${c.certifications.primary}`, bold: true, size: 18, color: DOCX_COLORS.primary, font: 'Arial' }),
             new TextRun({ text: `  ${c.certifications.primaryMeta}  ·  ${c.certifications.credlyUrl}`, size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
+          ],
+        }),
+        new Paragraph({
+          spacing: { before: 20, after: 40 },
+          children: [
+            new TextRun({ text: `★  ${c.certifications.secondary}`, bold: true, size: 18, color: DOCX_COLORS.primary, font: 'Arial' }),
+            new TextRun({ text: `  ${c.certifications.secondaryMeta}`, size: 17, color: DOCX_COLORS.subtext, font: 'Arial' }),
           ],
         }),
         docxPara(c.certifications.previous, { size: 17, color: DOCX_COLORS.subtext, before: 20, after: 80 }),
