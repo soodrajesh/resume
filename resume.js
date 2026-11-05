@@ -25,7 +25,7 @@ const DOCX_COLORS = Object.fromEntries(
 const CONTENT = {
   name: 'RAJESH SOOD',
   credential: 'MBA',
-  tagline: 'Senior Cloud & DevOps Engineer · AI/ML Platform Engineering · AWS · Kubernetes · Terraform · SRE',
+  tagline: 'Senior DevOps & MLOps Engineer · AI/ML Platform Engineering · AWS · Kubernetes · Terraform · SRE',
   contact: {
     email: 'soodrajesh87@gmail.com',
     linkedin: 'linkedin.com/in/rajeshsood',
