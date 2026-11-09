@@ -66,10 +66,10 @@ const CONTENT = {
 
   experience: [
     {
-      title: 'Senior DevOps Engineer', company: 'Workday', location: 'Dublin, Ireland', dates: 'Oct 2023 – Present',
-      intro: "Leading DevOps and AI/ML platform engineering within Workday's enterprise AWS environment, enabling internal product and documentation teams.",
+      title: 'Senior DevOps Engineer', company: 'Global Enterprise Software Company', location: 'Dublin, Ireland', dates: 'Oct 2023 – Present',
+      intro: "Leading DevOps and AI/ML platform engineering within an enterprise AWS environment, enabling internal product and documentation teams.",
       bullets: [
-        "AI/ML Platform Architecture: Designed and deployed SageMaker infrastructure enabling internal AI/ML teams to build, version, and serve models against Workday's documentation data — reducing model deployment lead time by 40%.",
+        "AI/ML Platform Architecture: Designed and deployed SageMaker infrastructure enabling internal AI/ML teams to build, version, and serve models against internal documentation data — reducing model deployment lead time by 40%.",
         'Generative AI Integration: Engineered serverless RAG pipelines and GenAI workflows via AWS Bedrock (Claude, Titan) powering internal AI chatbots and documentation search applications — spanning prompt engineering, vector search, and production observability.',
         'SRE & Reliability: Owned SLO/SLI framework and incident response for critical EKS microservices, maintaining 99.99% uptime through capacity planning and structured on-call rotation.',
         'Platform Modernisation: Redesigned CI/CD workflows (Jenkins + GitHub Actions) and IaC standards (Terraform/Helm), delivering a 35% reduction in deployment cycle time across all squads.',
